@@ -20,4 +20,6 @@ This is a backend API project built with TypeScript and Express.js. The goal is 
 ## Technical Stack
 - Language: TypeScript
 - Framework: Express.js
-- (Upcoming: PostgreSQL, Drizzle ORM, Docker, RabbitMQ)
+- Database: PostgreSQL
+- Infrastructure: Docker
+- (Upcoming: Drizzle ORM, RabbitMQ)
