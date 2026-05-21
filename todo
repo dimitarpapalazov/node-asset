@@ -1,5 +1,4 @@
 todo:
-add docker
 add postgresql
 add drizzle
 add unit tests
@@ -27,3 +26,4 @@ add ts
 add start & dev scripts
 add express
 add health check
+add docker
