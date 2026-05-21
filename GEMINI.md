@@ -11,7 +11,7 @@ This is a backend API project built with TypeScript and Express.js. The goal is 
     - There should be a new line before and after each block of code (curly braces).
 - **DRY (Don't Repeat Yourself):** Abstract shared logic into reusable utilities or middleware.
 - **TypeScript:** Use strict typing where possible. Avoid `any`.
-- **Architecture:** Aim for a modular structure that can grow with the project.
+- **Architecture:** Adhere to a standard layered architecture (Controllers, Services, Data Access) to ensure separation of concerns and maintainability. Aim for a modular structure that can grow with the project.
 
 ## Workflow
 - **Atomic Changes:** Each task/prompt should result in a single, atomic change comparable to a single git commit.
