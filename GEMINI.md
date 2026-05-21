@@ -8,7 +8,7 @@ This is a backend API project built with TypeScript and Express.js. The goal is 
 - **File Structure:** In TypeScript files, all exported values, functions, and classes must be defined at the top of the file (after imports). Internal/private helper functions and variables should be placed at the bottom.
 - **Formatting:** 
     - Use 4 spaces for indentation.
-    - There should be a new line before and after each block of code (curly braces).
+    - Always ensure there is a blank line before and after top-level code structures (such as if statements, loops, and functions).
 - **DRY (Don't Repeat Yourself):** Abstract shared logic into reusable utilities or middleware.
 - **TypeScript:** Use strict typing where possible. Avoid `any`.
 - **Architecture:** Adhere to a standard layered architecture (Controllers, Services, Data Access) to ensure separation of concerns and maintainability. Aim for a modular structure that can grow with the project.
