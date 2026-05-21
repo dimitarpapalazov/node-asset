@@ -1,5 +1,4 @@
 todo:
-init github
 init gemini
 init node project
 add ts
@@ -27,3 +26,4 @@ add readme
 
 done:
 init git
+init github
