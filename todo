@@ -1,6 +1,4 @@
 todo:
-init node project
-add ts
 add express
 add health check
 add start & dev scripts
@@ -27,3 +25,5 @@ done:
 init git
 init github
 init gemini
+init node project
+add ts
