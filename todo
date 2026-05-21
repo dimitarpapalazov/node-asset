@@ -1,0 +1,29 @@
+todo:
+init github
+init gemini
+init node project
+add ts
+add express
+add health check
+add start & dev scripts
+add docker
+add postgresql
+add drizzle
+add unit tests
+add users table
+add jwt
+add authorization
+add project table
+add assets table
+add file management logic
+add assets_versions table
+add versions logic
+add download key logic
+add export project logic
+add rabbitmq
+add worker for export
+add worker for manipulation
+add readme
+
+done:
+init git
