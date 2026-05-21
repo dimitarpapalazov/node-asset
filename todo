@@ -1,7 +1,4 @@
 todo:
-add express
-add health check
-add start & dev scripts
 add docker
 add postgresql
 add drizzle
@@ -27,3 +24,6 @@ init github
 init gemini
 init node project
 add ts
+add start & dev scripts
+add express
+add health check

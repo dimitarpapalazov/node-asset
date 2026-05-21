@@ -21,6 +21,10 @@
   },
   "homepage": "https://github.com/dimitarpapalazov/node-asset#readme",
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
   }
 }
