@@ -44,6 +44,6 @@ export const config: Config = {
         user: dbUser,
         pass: dbPass,
         name: dbName,
-        url: `postgresql://${dbUser}:${dbPass}@${dbHost}:${dbPort}/${dbName}`,
+        url: `postgres://${dbUser}:${dbPass}@${dbHost}:${dbPort}/${dbName}`,
     },
 };
