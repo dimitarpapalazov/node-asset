@@ -5,6 +5,7 @@ This is a backend API project built with TypeScript and Express.js. The goal is 
 
 ## Engineering Standards
 - **Clean Code:** Prioritize readability, meaningful naming, and small, focused functions/classes.
+- **Commenting:** Aim for self-documenting code. Use comments sparingly; they should be concise and focused on the "why" rather than the "how". Avoid verbose or redundant explanations.
 - **File Structure:** In TypeScript files, all exported values, functions, and classes must be defined at the top of the file (after imports). Internal/private helper functions and variables should be placed at the bottom.
 - **Formatting:** 
     - Use 4 spaces for indentation.
