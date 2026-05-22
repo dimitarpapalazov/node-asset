@@ -7,7 +7,9 @@
     "build": "npx tsc",
     "start": "node dist/index.js",
     "dev": "npm run build && npm run start",
-    "docker:up": "docker compose up --build"
+    "docker-up": "docker compose up --build",
+    "drizzle-generate": "npx drizzle-kit generate",
+    "drizzle-migrate": "npx drizzle-kit migrate"
   },
   "repository": {
     "type": "git",
@@ -23,9 +25,14 @@
   "homepage": "https://github.com/dimitarpapalazov/node-asset#readme",
   "devDependencies": {
     "@types/express": "^5.0.6",
+    "@types/pg": "^8.20.0",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.22.3",
     "typescript": "^6.0.3"
   },
   "dependencies": {
-    "express": "^5.2.1"
+    "drizzle-orm": "^0.45.2",
+    "express": "^5.2.1",
+    "pg": "^8.21.0"
   }
 }

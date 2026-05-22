@@ -1,5 +1,4 @@
 todo:
-add drizzle
 add unit tests
 add users table
 add jwt
@@ -28,3 +27,4 @@ add express
 add health check
 add docker
 add postgresql
+add drizzle
