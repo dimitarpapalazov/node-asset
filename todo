@@ -1,8 +1,6 @@
 todo:
-add users table
-add jwt
-add authorization
 add project table
+add authorization
 add assets table
 add file management logic
 add assets_versions table
@@ -28,3 +26,5 @@ add docker
 add postgresql
 add drizzle
 add unit tests
+add users table
+add jwt

@@ -25,6 +25,16 @@ export interface Config {
         name: string;
         url: string;
     };
+
+    /**
+     * JWT configuration.
+     */
+    jwt: {
+        accessSecret: string;
+        refreshSecret: string;
+        accessExpiry: string;
+        refreshExpiry: string;
+    };
 }
 
 const dbUser = envOrThrow('DB_USER');
@@ -45,5 +55,11 @@ export const config: Config = {
         pass: dbPass,
         name: dbName,
         url: `postgres://${dbUser}:${dbPass}@${dbHost}:${dbPort}/${dbName}`,
+    },
+    jwt: {
+        accessSecret: envOrThrow('JWT_ACCESS_SECRET'),
+        refreshSecret: envOrThrow('JWT_REFRESH_SECRET'),
+        accessExpiry: envOrThrow('ACCESS_TOKEN_EXPIRY'),
+        refreshExpiry: envOrThrow('REFRESH_TOKEN_EXPIRY'),
     },
 };

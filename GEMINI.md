@@ -23,6 +23,7 @@ This is a backend API project built with TypeScript and Express.js. The goal is 
     - Use **Vitest** for unit and integration testing.
     - Test files must use the `.test.ts` extension and be placed alongside the code they test.
     - Prioritize testing for Services and Utilities.
+- **Authentication:** Use JWTs with access/refresh tokens. Access tokens should be short-lived and stateless; refresh tokens are validated against `tokenVersion` in the DB for secure revocation.
 
 ## Workflow
 - **Atomic Changes:** Each task/prompt should result in a single, atomic change comparable to a single git commit.
@@ -32,6 +33,7 @@ This is a backend API project built with TypeScript and Express.js. The goal is 
 - Language: TypeScript
 - Framework: Express.js
 - Database: PostgreSQL (with Drizzle ORM)
+- Authentication: JSON Web Tokens (JWT) & Argon2
 - Testing: Vitest
 - Infrastructure: Docker
 - (Upcoming: RabbitMQ)
