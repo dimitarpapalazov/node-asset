@@ -9,7 +9,8 @@
     "dev": "npm run build && npm run start",
     "docker-up": "docker compose up --build",
     "drizzle-generate": "npx drizzle-kit generate",
-    "drizzle-migrate": "npx drizzle-kit migrate"
+    "drizzle-migrate": "npx drizzle-kit migrate",
+    "test": "vitest"
   },
   "repository": {
     "type": "git",
@@ -28,7 +29,8 @@
     "@types/pg": "^8.20.0",
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.22.3",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.7"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",

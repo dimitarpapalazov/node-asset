@@ -1,5 +1,4 @@
 todo:
-add unit tests
 add users table
 add jwt
 add authorization
@@ -28,3 +27,4 @@ add health check
 add docker
 add postgresql
 add drizzle
+add unit tests

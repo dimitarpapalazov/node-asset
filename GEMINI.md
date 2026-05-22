@@ -9,17 +9,28 @@ This is a backend API project built with TypeScript and Express.js. The goal is 
 - **Formatting:** 
     - Use 4 spaces for indentation.
     - Always ensure there is a blank line before and after top-level code structures (such as if statements, loops, and functions).
-- **DRY (Don't Repeat Yourself):** Abstract shared logic into reusable utilities or middleware.
+- **DRY (Don't Repeat Yourself):** Abstract shared logic into reusable utilities (in `src/utils`) or middleware.
 - **TypeScript:** Use strict typing where possible. Avoid `any`.
-- **Architecture:** Adhere to a standard layered architecture (Controllers, Services, Data Access) to ensure separation of concerns and maintainability. Aim for a modular structure that can grow with the project.
+- **Architecture:** Adhere to a standard layered architecture to ensure separation of concerns:
+    - `src/controllers`: Request/Response handling.
+    - `src/services`: Business logic and core functionality.
+    - `src/db`: Database schema (Drizzle) and connection setup.
+    - `src/routes`: API endpoint definitions.
+    - `src/utils`: Reusable helper functions (e.g., environment, shutdown).
+- **Environment Management:** Always use `envOrThrow` from `src/utils/env.ts` for environment variable access to ensure validation at startup.
+- **Testing:** 
+    - Use **Vitest** for unit and integration testing.
+    - Test files must use the `.test.ts` extension and be placed alongside the code they test.
+    - Prioritize testing for Services and Utilities.
 
 ## Workflow
 - **Atomic Changes:** Each task/prompt should result in a single, atomic change comparable to a single git commit.
-- **Validation:** Always verify changes with tests or manual checks where appropriate.
+- **Validation:** Always verify changes with tests (`npm test`) and builds (`npm run build`).
 
 ## Technical Stack
 - Language: TypeScript
 - Framework: Express.js
-- Database: PostgreSQL
+- Database: PostgreSQL (with Drizzle ORM)
+- Testing: Vitest
 - Infrastructure: Docker
-- (Upcoming: Drizzle ORM, RabbitMQ)
+- (Upcoming: RabbitMQ)
