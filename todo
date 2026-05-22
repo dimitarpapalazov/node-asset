@@ -15,6 +15,7 @@ add rabbitmq
 add worker for export
 add worker for manipulation
 add readme
+add logging
 
 done:
 init git
