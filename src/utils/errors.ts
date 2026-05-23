@@ -31,3 +31,9 @@ export class UnauthorizedError extends AppError {
         super(message, HttpStatus.UNAUTHORIZED);
     }
 }
+
+export class ConflictError extends AppError {
+    constructor(message: string) {
+        super(message, HttpStatus.CONFLICT);
+    }
+}

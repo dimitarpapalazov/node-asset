@@ -2,6 +2,7 @@ import { db } from '../db/index.js';
 import { users } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import * as argon2 from 'argon2';
+import { ConflictError } from '../utils/errors.js';
 
 export interface CreateUserInput {
     email: string;
@@ -16,6 +17,12 @@ export type User = typeof users.$inferSelect;
 export type UserResponse = Omit<User, 'passwordHash'>;
 
 export const createUser = async (input: CreateUserInput): Promise<UserResponse> => {
+    const existingUser = await getUserByEmail(input.email);
+
+    if (existingUser) {
+        throw new ConflictError('User with this email already exists.');
+    }
+
     const passwordHash = await argon2.hash(input.password);
 
     const [user] = await db.insert(users)

@@ -13,7 +13,7 @@ vi.mock('../db/index.js', () => ({
         })),
         select: vi.fn(() => ({
             from: vi.fn(() => ({
-                where: vi.fn(() => [{ id: '1', email: 'test@example.com', passwordHash: 'hashed' }]),
+                where: vi.fn(() => []), // Simulate no user found
             })),
         })),
         delete: vi.fn(() => ({
@@ -41,7 +41,14 @@ describe('User Service', () => {
         expect(user).not.toHaveProperty('passwordHash');
     });
 
+    // Need to handle different select mocks for different tests
     it('should get a user by id', async () => {
+        // Redefine select mock to return a user for this specific test
+        (db.select as any).mockReturnValue({
+            from: vi.fn(() => ({
+                where: vi.fn(() => [{ id: '1', email: 'test@example.com', passwordHash: 'hashed' }]),
+            })),
+        });
         const user = await userService.getUserById('1');
 
         expect(db.select).toHaveBeenCalled();
@@ -50,6 +57,12 @@ describe('User Service', () => {
     });
 
     it('should get a user by email', async () => {
+        // Redefine select mock to return a user for this specific test
+        (db.select as any).mockReturnValue({
+            from: vi.fn(() => ({
+                where: vi.fn(() => [{ id: '1', email: 'test@example.com', passwordHash: 'hashed' }]),
+            })),
+        });
         const user = await userService.getUserByEmail('test@example.com');
 
         expect(db.select).toHaveBeenCalled();
