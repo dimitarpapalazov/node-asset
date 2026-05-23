@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import * as userService from '../services/user.service.js';
 import { HttpStatus } from '../constants/constants.js';
-import { getRequiredParam, validateRequiredFields } from '../utils/params.js';
+import { getRequiredParam } from '../utils/params.js';
 import { AppError, ForbiddenError } from '../utils/errors.js';
 
 export const getUser = async (req: Request, res: Response): Promise<void> => {

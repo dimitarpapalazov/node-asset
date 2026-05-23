@@ -6,6 +6,7 @@
   "scripts": {
     "build": "npx tsc",
     "start": "node dist/index.js",
+    "local-start": "./scripts/start.sh",
     "dev": "npm run build && npm run start",
     "docker-up": "docker compose up --build",
     "drizzle-generate": "npx drizzle-kit generate",
