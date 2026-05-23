@@ -8,6 +8,13 @@
       "when": 1779467481270,
       "tag": "0000_last_galactus",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1779544313486,
+      "tag": "0001_certain_ma_gnuci",
+      "breakpoints": true
     }
   ]
 }
