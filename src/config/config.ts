@@ -24,6 +24,7 @@ export interface Config {
         pass: string;
         name: string;
         url: string;
+        drizzleConfigUrl: string;
     };
 
     /**
@@ -55,6 +56,7 @@ export const config: Config = {
         pass: dbPass,
         name: dbName,
         url: `postgres://${dbUser}:${dbPass}@${dbHost}:${dbPort}/${dbName}`,
+        drizzleConfigUrl: `postgres://${dbUser}:${dbPass}@localhost:${dbPort}/${dbName}`,
     },
     jwt: {
         accessSecret: envOrThrow('JWT_ACCESS_SECRET'),

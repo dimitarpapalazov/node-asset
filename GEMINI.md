@@ -19,10 +19,12 @@ This is a backend API project built with TypeScript and Express.js. The goal is 
     - `src/routes`: API endpoint definitions.
     - `src/utils`: Reusable helper functions (e.g., environment, shutdown).
 - **Environment Management:** Always use `envOrThrow` from `src/utils/env.ts` for environment variable access to ensure validation at startup.
-- **Testing:** 
+- **Testing (TDD):** 
+    - Mandate a Test-Driven Development (TDD) approach for all new features and bug fixes.
+    - Implement comprehensive unit tests wherever possible.
     - Use **Vitest** for unit and integration testing.
     - Test files must use the `.test.ts` extension and be placed alongside the code they test.
-    - Prioritize testing for Services and Utilities.
+    - Prioritize high test coverage for Services and Utilities.
 - **Authentication:** Use JWTs with access/refresh tokens. Access tokens should be short-lived and stateless; refresh tokens are validated against `tokenVersion` in the DB for secure revocation.
 
 ## Workflow

@@ -8,7 +8,6 @@ import { CONSTANTS } from '../constants/constants.js';
  * @param signal - The signal that triggered the shutdown.
  */
 export const handleShutdown = (server: Server, signal: string): void => {
-    // if I remove this comment, the server goes into a loop in docker. wtf?
     console.log(`\nReceived ${signal}. Shutting down gracefully...`);
 
     server.close(() => {

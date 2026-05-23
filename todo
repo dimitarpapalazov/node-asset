@@ -1,8 +1,6 @@
 todo:
-add project table
-add authorization
-add assets table
 add file management logic
+add assets table
 add assets_versions table
 add versions logic
 add download key logic
@@ -30,3 +28,5 @@ add drizzle
 add unit tests
 add users table
 add jwt
+add project table
+add authorization
