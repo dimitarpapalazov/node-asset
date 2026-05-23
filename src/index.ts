@@ -1,4 +1,5 @@
 import express from 'express';
+import cookieParser from 'cookie-parser';
 import { config } from './config/config.js';
 import apiRoutes from './routes/index.js';
 import { handleShutdown } from './utils/shutdown.js';
@@ -6,6 +7,7 @@ import { handleShutdown } from './utils/shutdown.js';
 const app = express();
 
 app.use(express.json());
+app.use(cookieParser());
 
 app.use('/', apiRoutes);
 

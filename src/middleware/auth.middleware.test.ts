@@ -17,22 +17,17 @@ describe('Auth Middleware', () => {
     let next: NextFunction;
 
     beforeEach(() => {
-        mockRequest = { headers: {} };
+        mockRequest = { cookies: {} };
         mockResponse = {};
         next = vi.fn();
     });
 
-    it('should throw UnauthorizedError if no authorization header', () => {
+    it('should throw UnauthorizedError if no accessToken cookie', () => {
         expect(() => authenticate(mockRequest as Request, mockResponse as Response, next)).toThrow(UnauthorizedError);
     });
 
-    it('should throw UnauthorizedError if invalid header format', () => {
-        mockRequest.headers = { authorization: 'Basic token' };
-        expect(() => authenticate(mockRequest as Request, mockResponse as Response, next)).toThrow(UnauthorizedError);
-    });
-
-    it('should call next if token is valid', () => {
-        mockRequest.headers = { authorization: 'Bearer valid-token' };
+    it('should call next if accessToken cookie is valid', () => {
+        mockRequest.cookies = { accessToken: 'valid-token' };
         (jwt.verify as any).mockReturnValue({ userId: '1' });
 
         authenticate(mockRequest as Request, mockResponse as Response, next);

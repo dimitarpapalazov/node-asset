@@ -4,13 +4,11 @@ import { config } from '../config/config.js';
 import { UnauthorizedError } from '../utils/errors.js';
 
 export const authenticate = (req: Request, res: Response, next: NextFunction): void => {
-    const authHeader = req.headers.authorization;
+    const token = req.cookies.accessToken;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!token) {
         throw new UnauthorizedError('Missing or invalid token.');
     }
-
-    const token = authHeader.split(' ')[1];
 
     try {
         const decoded = jwt.verify(token, config.jwt.accessSecret) as { userId: string };

@@ -4,17 +4,6 @@ import { HttpStatus } from '../constants/constants.js';
 import { getRequiredParam, validateRequiredFields } from '../utils/params.js';
 import { AppError } from '../utils/errors.js';
 
-export const createUser = async (req: Request, res: Response): Promise<void> => {
-    try {
-        validateRequiredFields(req.body, ['email', 'password']);
-        
-        const user = await userService.createUser(req.body);
-        res.status(HttpStatus.CREATED).json(user);
-    } catch (error) {
-        handleError(res, error, 'Error creating user');
-    }
-};
-
 export const getUser = async (req: Request, res: Response): Promise<void> => {
     try {
         const id = getRequiredParam(req, 'id');
@@ -50,7 +39,7 @@ function handleError(res: Response, error: unknown, fallbackMessage: string): vo
         return;
     }
 
-    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ 
-        message: error instanceof Error ? error.message : fallbackMessage 
+    res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        message: error instanceof Error ? error.message : fallbackMessage
     });
 }

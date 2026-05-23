@@ -7,11 +7,13 @@ add assets_versions table
 add versions logic
 add download key logic
 add export project logic
+add logging
+add error handler
 add rabbitmq
 add worker for export
 add worker for manipulation
 add readme
-add logging
+cache control?
 
 done:
 init git

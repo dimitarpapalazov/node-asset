@@ -6,7 +6,6 @@ import { HttpStatus } from '../constants/constants.js';
 import { MissingParamError, MissingFieldError } from '../utils/errors.js';
 
 vi.mock('../services/user.service.js', () => ({
-    createUser: vi.fn(),
     getUserById: vi.fn(),
     deleteUser: vi.fn(),
 }));
@@ -20,7 +19,7 @@ describe('User Controller', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        
+
         jsonSpy = vi.fn();
         sendSpy = vi.fn();
         statusSpy = vi.fn(() => ({
@@ -31,30 +30,6 @@ describe('User Controller', () => {
         mockResponse = {
             status: statusSpy,
         };
-    });
-
-    describe('createUser', () => {
-        it('should create a user and return 201', async () => {
-            const mockUser = { id: '1', email: 'test@example.com' };
-            mockRequest = { body: { email: 'test@example.com', password: 'password' } };
-            (userService.createUser as any).mockResolvedValue(mockUser);
-
-            await userController.createUser(mockRequest as Request, mockResponse as Response);
-
-            expect(statusSpy).toHaveBeenCalledWith(HttpStatus.CREATED);
-            expect(jsonSpy).toHaveBeenCalledWith(mockUser);
-        });
-
-        it('should return 400 if required fields are missing', async () => {
-            mockRequest = { body: { email: 'test@example.com' } };
-
-            await userController.createUser(mockRequest as Request, mockResponse as Response);
-
-            expect(statusSpy).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
-            expect(jsonSpy).toHaveBeenCalledWith({
-                message: new MissingFieldError('password').message
-            });
-        });
     });
 
     describe('getUser', () => {
