@@ -68,13 +68,22 @@ describe('User Controller', () => {
 
     describe('deleteUser', () => {
         it('should return 204 on successful deletion', async () => {
-            mockRequest = { params: { id: '1' } };
+            mockRequest = { params: { id: '1' }, user: { userId: '1' } };
             (userService.deleteUser as any).mockResolvedValue(undefined);
 
             await userController.deleteUser(mockRequest as Request, mockResponse as Response);
 
             expect(statusSpy).toHaveBeenCalledWith(HttpStatus.NO_CONTENT);
             expect(sendSpy).toHaveBeenCalled();
+        });
+
+        it('should return 403 when deleting a different user', async () => {
+            mockRequest = { params: { id: '2' }, user: { userId: '1' } };
+
+            await userController.deleteUser(mockRequest as Request, mockResponse as Response);
+
+            expect(statusSpy).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
+            expect(jsonSpy).toHaveBeenCalledWith({ message: 'You are not authorized to delete this user.' });
         });
     });
 });

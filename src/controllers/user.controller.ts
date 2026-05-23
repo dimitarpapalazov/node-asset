@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import * as userService from '../services/user.service.js';
 import { HttpStatus } from '../constants/constants.js';
 import { getRequiredParam, validateRequiredFields } from '../utils/params.js';
-import { AppError } from '../utils/errors.js';
+import { AppError, ForbiddenError } from '../utils/errors.js';
 
 export const getUser = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -23,6 +23,12 @@ export const getUser = async (req: Request, res: Response): Promise<void> => {
 export const deleteUser = async (req: Request, res: Response): Promise<void> => {
     try {
         const id = getRequiredParam(req, 'id');
+        const authenticatedUserId = req.user?.userId;
+
+        if (authenticatedUserId !== id) {
+            throw new ForbiddenError('You are not authorized to delete this user.');
+        }
+
         await userService.deleteUser(id);
         res.status(HttpStatus.NO_CONTENT).send();
     } catch (error) {
