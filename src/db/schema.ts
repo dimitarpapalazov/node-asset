@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, timestamp, text } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, timestamp, text, integer, jsonb } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
     id: uuid('id').primaryKey().defaultRandom(),
@@ -23,4 +23,35 @@ export const projects = pgTable('projects', {
 
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const assets = pgTable('assets', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: varchar('name', { length: 255 }).notNull(),
+
+    // Relations
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }).notNull(),
+
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const assetVersions = pgTable('asset_versions', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    assetId: uuid('asset_id').references(() => assets.id, { onDelete: 'cascade' }).notNull(),
+
+    // Content-Addressable Storage hash
+    hash: varchar('hash', { length: 64 }).notNull(),
+
+    // Metadata
+    size: integer('size').notNull(),
+    format: varchar('format', { length: 50 }).notNull(),
+    width: integer('width'),
+    height: integer('height'),
+
+    // Parameters used for this manipulation (optional)
+    params: jsonb('params'),
+
+    createdAt: timestamp('created_at').defaultNow().notNull(),
 });

@@ -7,7 +7,7 @@
     "build": "npx tsc",
     "start": "node dist/index.js",
     "local-start": "./scripts/start.sh",
-    "dev": "npm run build && npm run start",
+    "dev": "npm run build && npm run start-local",
     "docker-up": "docker compose up --build",
     "drizzle-generate": "npx drizzle-kit generate",
     "drizzle-migrate": "npx drizzle-kit migrate",
@@ -30,6 +30,7 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/pg": "^8.20.0",
+    "@types/sharp": "^0.31.1",
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3",
@@ -41,6 +42,7 @@
     "drizzle-orm": "^0.45.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
-    "pg": "^8.21.0"
+    "pg": "^8.21.0",
+    "sharp": "^0.34.5"
   }
 }

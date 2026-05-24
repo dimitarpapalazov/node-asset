@@ -3,8 +3,8 @@ add file management logic
 add assets table
 add assets_versions table
 add versions logic
-add download key logic
 add export project logic
+add download key logic
 add logging
 add error handler
 add rabbitmq

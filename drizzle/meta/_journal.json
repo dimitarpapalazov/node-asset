@@ -15,6 +15,13 @@
       "when": 1779544313486,
       "tag": "0001_certain_ma_gnuci",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779604244000,
+      "tag": "0002_premium_carnage",
+      "breakpoints": true
     }
   ]
 }
