@@ -43,3 +43,9 @@ export class ConflictError extends AppError {
         super(message, HttpStatus.CONFLICT);
     }
 }
+
+export class NotFoundError extends AppError {
+    constructor(message: string) {
+        super(message, HttpStatus.NOT_FOUND);
+    }
+}

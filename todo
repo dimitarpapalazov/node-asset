@@ -1,8 +1,5 @@
 todo:
-add file management logic
-add assets table
-add assets_versions table
-add versions logic
+field validation logic
 add export project logic
 add download key logic
 add logging
@@ -30,3 +27,7 @@ add users table
 add jwt
 add project table
 add authorization
+add file management logic
+add assets table
+add assets_versions table
+add versions logic
