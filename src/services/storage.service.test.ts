@@ -1,7 +1,17 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { StorageService } from './storage.service.js';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { rm, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
+
+// Mock config BEFORE importing StorageService
+vi.mock('../config/config.js', () => ({
+    config: {
+        storage: {
+            uploadsDir: 'test-uploads'
+        }
+    }
+}));
+
+import { StorageService } from './storage.service.js';
 
 describe('StorageService', () => {
     const testUploadsDir = join(process.cwd(), 'test-uploads');
