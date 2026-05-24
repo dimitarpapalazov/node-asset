@@ -36,6 +36,13 @@ export interface Config {
         accessExpiry: string;
         refreshExpiry: string;
     };
+
+    /**
+     * Storage configuration.
+     */
+    storage: {
+        uploadsDir: string;
+    };
 }
 
 const dbUser = envOrThrow('DB_USER');
@@ -63,5 +70,8 @@ export const config: Config = {
         refreshSecret: envOrThrow('JWT_REFRESH_SECRET'),
         accessExpiry: envOrThrow('ACCESS_TOKEN_EXPIRY'),
         refreshExpiry: envOrThrow('REFRESH_TOKEN_EXPIRY'),
+    },
+    storage: {
+        uploadsDir: envOrThrow('UPLOADS_DIR'),
     },
 };
