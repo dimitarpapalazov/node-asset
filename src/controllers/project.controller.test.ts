@@ -6,6 +6,7 @@ import { HttpStatus } from '../constants/constants.js';
 vi.mock('../services/project.service.js', () => ({
     createProject: vi.fn(),
     getUserProjects: vi.fn(),
+    getProjectByIdAndUserId: vi.fn(),
     updateProject: vi.fn(),
     deleteProject: vi.fn(),
     exportProject: vi.fn(),
@@ -30,6 +31,30 @@ describe('Project Controller', () => {
         };
     });
 
+    describe('getProject', () => {
+        it('should return project if authorized', async () => {
+            req.params = { id: 'p1' };
+            const mockProject = { id: 'p1', name: 'Test Project', userId: 'user-1' };
+            vi.mocked(projectService.getProjectByIdAndUserId).mockResolvedValue(mockProject);
+
+            await projectController.getProject(req, res);
+
+            expect(projectService.getProjectByIdAndUserId).toHaveBeenCalledWith('p1', 'user-1');
+            expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
+            expect(res.json).toHaveBeenCalledWith(mockProject);
+        });
+
+        it('should return 404 if unauthorized', async () => {
+            req.params = { id: 'p1' };
+            vi.mocked(projectService.getProjectByIdAndUserId).mockResolvedValue(undefined);
+
+            await projectController.getProject(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+            expect(res.json).toHaveBeenCalledWith({ message: 'Project not found or unauthorized' });
+        });
+    });
+
     describe('exportProject', () => {
         it('should set headers and pipe archive to response', async () => {
             req.params = { id: 'p1' };
@@ -44,6 +69,7 @@ describe('Project Controller', () => {
 
             await projectController.exportProject(req, res);
 
+            expect(projectService.exportProject).toHaveBeenCalledWith('p1', 'user-1');
             expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'application/zip');
             expect(res.setHeader).toHaveBeenCalledWith('Content-Disposition', 'attachment; filename="Test Project.zip"');
             expect(mockArchive.pipe).toHaveBeenCalledWith(res);

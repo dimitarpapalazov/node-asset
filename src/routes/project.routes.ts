@@ -8,6 +8,7 @@ router.use(authenticate);
 
 router.post('/', projectController.createProject);
 router.get('/', projectController.getUserProjects);
+router.get('/:id', projectController.getProject);
 router.put('/:id', projectController.updateProject);
 router.delete('/:id', projectController.deleteProject);
 router.get('/:id/export', projectController.exportProject);

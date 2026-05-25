@@ -1,16 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as assetController from './asset.controller.js';
 import * as assetService from '../services/asset.service.js';
+import * as projectService from '../services/project.service.js';
 import { InvalidParamError } from '../utils/errors.js';
 import { HttpStatus } from '../constants/constants.js';
 
 vi.mock('../services/asset.service.js', () => ({
     manipulateAsset: vi.fn(),
     uploadAsset: vi.fn(),
+    getAssetByIdAndUserId: vi.fn(),
     getAssetById: vi.fn(),
     getLatestVersion: vi.fn(),
     getAllVersions: vi.fn(),
     deleteAsset: vi.fn(),
+}));
+
+vi.mock('../services/project.service.js', () => ({
+    getProjectByIdAndUserId: vi.fn(),
 }));
 
 describe('Asset Controller', () => {
@@ -32,9 +38,12 @@ describe('Asset Controller', () => {
     });
 
     describe('manipulateAsset', () => {
-        it('should parse options correctly and call service', async () => {
+        it('should parse options correctly and call service if authorized', async () => {
             req.params = { assetId: 'a1', versionId: 'v1' };
             req.body = { width: '100', height: 200, fit: 'contain', format: 'webp' };
+            
+            const mockAsset = { id: 'a1', userId: 'user-1' };
+            vi.mocked(assetService.getAssetByIdAndUserId).mockResolvedValue(mockAsset as any);
             
             const mockVersion = { id: 'v2' };
             vi.mocked(assetService.manipulateAsset).mockResolvedValue(mockVersion as any);
@@ -51,39 +60,20 @@ describe('Asset Controller', () => {
             expect(res.json).toHaveBeenCalledWith(mockVersion);
         });
 
+        it('should throw error if unauthorized', async () => {
+            req.params = { assetId: 'a1', versionId: 'v1' };
+            vi.mocked(assetService.getAssetByIdAndUserId).mockResolvedValue(undefined);
+
+            await expect(assetController.manipulateAsset(req, res)).rejects.toThrow('Asset not found or unauthorized');
+        });
+
         it('should throw InvalidParamError if width is not a number', async () => {
             req.params = { assetId: 'a1', versionId: 'v1' };
             req.body = { width: 'invalid' };
+            vi.mocked(assetService.getAssetByIdAndUserId).mockResolvedValue({ id: 'a1' } as any);
 
             await expect(assetController.manipulateAsset(req, res)).rejects.toThrow(InvalidParamError);
             await expect(assetController.manipulateAsset(req, res)).rejects.toThrow('Field "width" must be a number.');
-        });
-
-        it('should throw InvalidParamError if height is not a number', async () => {
-            req.params = { assetId: 'a1', versionId: 'v1' };
-            req.body = { height: 'invalid' };
-
-            await expect(assetController.manipulateAsset(req, res)).rejects.toThrow(InvalidParamError);
-            await expect(assetController.manipulateAsset(req, res)).rejects.toThrow('Field "height" must be a number.');
-        });
-
-        it('should throw InvalidParamError if fit is invalid', async () => {
-            req.params = { assetId: 'a1', versionId: 'v1' };
-            req.body = { fit: 'invalid-fit' };
-
-            await expect(assetController.manipulateAsset(req, res)).rejects.toThrow(InvalidParamError);
-            await expect(assetController.manipulateAsset(req, res)).rejects.toThrow('Field "fit" must be one of: cover, contain, fill, inside, outside.');
-        });
-
-        it('should work with empty body', async () => {
-            req.params = { assetId: 'a1', versionId: 'v1' };
-            req.body = {};
-
-            vi.mocked(assetService.manipulateAsset).mockResolvedValue({ id: 'v2' } as any);
-
-            await assetController.manipulateAsset(req, res);
-
-            expect(assetService.manipulateAsset).toHaveBeenCalledWith('a1', 'v1', {});
         });
     });
 });

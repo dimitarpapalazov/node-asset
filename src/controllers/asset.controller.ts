@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import * as assetService from '../services/asset.service.js';
+import * as projectService from '../services/project.service.js';
 import { HttpStatus, AssetFit } from '../constants/constants.js';
 import { NotFoundError, InvalidParamError } from '../utils/errors.js';
 import { getRequiredParam, validateRequiredFields } from '../utils/params.js';
@@ -8,11 +9,16 @@ export const uploadAsset = async (req: Request, res: Response): Promise<void> =>
     validateRequiredFields(req.body, ['projectId', 'name']);
     const { projectId, name } = req.body;
     const file = req.file;
+    const userId = req.user!.userId;
 
     if (!file) throw new InvalidParamError('Required field "file" is missing from request.');
 
+    // Authorize: Check if project belongs to user
+    const project = await projectService.getProjectByIdAndUserId(projectId, userId);
+    if (!project) throw new NotFoundError('Project not found or unauthorized');
+
     const asset = await assetService.uploadAsset(
-        req.user!.userId,
+        userId,
         projectId as string,
         name as string,
         file.buffer
@@ -25,6 +31,11 @@ export const manipulateAsset = async (req: Request, res: Response): Promise<void
     const assetId = getRequiredParam(req, 'assetId');
     const versionId = getRequiredParam(req, 'versionId');
     const options = parseManipulationOptions(req.body);
+    const userId = req.user!.userId;
+
+    // Authorize: Check if asset belongs to user
+    const asset = await assetService.getAssetByIdAndUserId(assetId, userId);
+    if (!asset) throw new NotFoundError('Asset not found or unauthorized');
 
     const newVersion = await assetService.manipulateAsset(assetId, versionId, options);
 
@@ -33,7 +44,10 @@ export const manipulateAsset = async (req: Request, res: Response): Promise<void
 
 export const getAsset = async (req: Request, res: Response): Promise<void> => {
     const id = getRequiredParam(req, 'id');
-    const asset = await assetService.getAssetById(id);
+    const userId = req.user!.userId;
+
+    // Authorize: Check if asset belongs to user
+    const asset = await assetService.getAssetByIdAndUserId(id, userId);
 
     if (!asset) {
         throw new NotFoundError(`Asset with id ${id} not found.`);
@@ -46,6 +60,12 @@ export const getAsset = async (req: Request, res: Response): Promise<void> => {
 
 export const getAssetVersions = async (req: Request, res: Response): Promise<void> => {
     const id = getRequiredParam(req, 'id');
+    const userId = req.user!.userId;
+
+    // Authorize: Check if asset belongs to user
+    const asset = await assetService.getAssetByIdAndUserId(id, userId);
+    if (!asset) throw new NotFoundError(`Asset with id ${id} not found.`);
+
     const versions = await assetService.getAllVersions(id);
 
     res.status(HttpStatus.OK).json(versions);
@@ -53,6 +73,12 @@ export const getAssetVersions = async (req: Request, res: Response): Promise<voi
 
 export const deleteAsset = async (req: Request, res: Response): Promise<void> => {
     const id = getRequiredParam(req, 'id');
+    const userId = req.user!.userId;
+
+    // Authorize: Check if asset belongs to user
+    const asset = await assetService.getAssetByIdAndUserId(id, userId);
+    if (!asset) throw new NotFoundError(`Asset with id ${id} not found.`);
+
     await assetService.deleteAsset(id);
 
     res.status(HttpStatus.NO_CONTENT).send();

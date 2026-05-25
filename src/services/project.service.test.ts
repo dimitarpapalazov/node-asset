@@ -139,7 +139,7 @@ describe('Project Service', () => {
             vi.mocked(assetService.getLatestVersion).mockResolvedValue(mockVersion as any);
             vi.mocked(storageService.get).mockResolvedValue(Buffer.from('raw-image'));
 
-            const { archive, projectName } = await projectService.exportProject('p1');
+            const { archive, projectName } = await projectService.exportProject('p1', 'user1');
 
             expect(projectName).toBe('My Project');
             expect(archiver).toHaveBeenCalledWith('zip', expect.any(Object));
@@ -151,13 +151,13 @@ describe('Project Service', () => {
             expect(archive.finalize).toHaveBeenCalled();
         });
 
-        it('should throw error if project not found', async () => {
+        it('should throw error if project not found or unauthorized', async () => {
             mockedDb.select.mockReturnValue({
                 from: vi.fn().mockReturnThis(),
                 where: vi.fn().mockResolvedValue([])
             });
 
-            await expect(projectService.exportProject('non-existent')).rejects.toThrow('Project not found');
+            await expect(projectService.exportProject('p1', 'wrong-user')).rejects.toThrow('Project not found or unauthorized');
         });
     });
 });

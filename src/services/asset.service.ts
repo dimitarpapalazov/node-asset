@@ -1,6 +1,6 @@
 import { db } from '../db/index.js';
 import { assets, assetVersions } from '../db/schema.js';
-import { eq, desc } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { storageService } from './storage.service.js';
 import { AssetFit } from '../constants/constants.js';
 import sharp from 'sharp';
@@ -45,6 +45,14 @@ export const getAssetById = async (id: string): Promise<Asset | undefined> => {
     const [asset] = await db.select()
         .from(assets)
         .where(eq(assets.id, id));
+    
+    return asset;
+};
+
+export const getAssetByIdAndUserId = async (id: string, userId: string): Promise<Asset | undefined> => {
+    const [asset] = await db.select()
+        .from(assets)
+        .where(and(eq(assets.id, id), eq(assets.userId, userId)));
     
     return asset;
 };

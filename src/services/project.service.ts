@@ -33,6 +33,14 @@ export const getProjectById = async (id: string): Promise<Project | undefined> =
     return project;
 };
 
+export const getProjectByIdAndUserId = async (id: string, userId: string): Promise<Project | undefined> => {
+    const [project] = await db.select()
+        .from(projects)
+        .where(and(eq(projects.id, id), eq(projects.userId, userId)));
+
+    return project;
+};
+
 export const getUserProjects = async (userId: string): Promise<Project[]> => {
     return await db.select()
         .from(projects)
@@ -53,11 +61,11 @@ export const deleteProject = async (id: string, userId: string): Promise<void> =
         .where(and(eq(projects.id, id), eq(projects.userId, userId)));
 };
 
-export const exportProject = async (projectId: string): Promise<{ archive: archiver.Archiver, projectName: string }> => {
-    const project = await getProjectById(projectId);
+export const exportProject = async (projectId: string, userId: string): Promise<{ archive: archiver.Archiver, projectName: string }> => {
+    const project = await getProjectByIdAndUserId(projectId, userId);
 
     if (!project) {
-        throw new Error('Project not found');
+        throw new Error('Project not found or unauthorized');
     }
 
     const projectAssets = await db.select()

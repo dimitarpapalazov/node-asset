@@ -27,6 +27,23 @@ export const getUserProjects = async (req: Request, res: Response): Promise<void
     }
 };
 
+export const getProject = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const id = getRequiredParam(req, 'id');
+        const userId = req.user!.userId;
+        const project = await projectService.getProjectByIdAndUserId(id, userId);
+
+        if (!project) {
+            res.status(HttpStatus.NOT_FOUND).json({ message: 'Project not found or unauthorized' });
+            return;
+        }
+
+        res.status(HttpStatus.OK).json(project);
+    } catch (error) {
+        handleError(res, error, 'Error retrieving project');
+    }
+};
+
 export const updateProject = async (req: Request, res: Response): Promise<void> => {
     try {
         const id = getRequiredParam(req, 'id');
@@ -61,7 +78,8 @@ export const deleteProject = async (req: Request, res: Response): Promise<void> 
 export const exportProject = async (req: Request, res: Response): Promise<void> => {
     try {
         const id = getRequiredParam(req, 'id');
-        const { archive, projectName } = await projectService.exportProject(id);
+        const userId = req.user!.userId;
+        const { archive, projectName } = await projectService.exportProject(id, userId);
 
         res.setHeader('Content-Type', 'application/zip');
         res.setHeader('Content-Disposition', `attachment; filename="${projectName}.zip"`);
