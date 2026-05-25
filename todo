@@ -1,5 +1,4 @@
 todo:
-add readme
 add logging
 add error handler
 add download key logic
@@ -33,3 +32,4 @@ add versions logic
 field validation logic
 add export project logic
 delete assets when deleting project
+add readme

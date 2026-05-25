@@ -14,7 +14,9 @@ The Node Asset Management API is a backend solution designed to manage organizat
 
 ## Motivation
 
-The primary goal of this project is to showcase high-quality software engineering practices in a Node.js environment. By adhering to strict standards like DRY, explicit typing, and modular design, this API serves as both a functional tool and a blueprint for building maintainable, production-ready backend systems.
+The development of this project was driven by two key motivations. First, I wanted to recreate a similar asset management system I worked on at my previous job; however, since that code is company property, I could not reuse it. Rebuilding it from scratch provided an excellent opportunity to refine the implementation based on what I learned.
+
+Second, I recently completed a comprehensive backend development course, and this project serves as a practical application of the concepts I learned. It allows me to demonstrate my skills in designing maintainable, production-ready backend systems, adhering to principles like DRY, explicit typing, and modular architecture.
 
 ## Quick Start
 
@@ -53,10 +55,34 @@ The primary goal of this project is to showcase high-quality software engineerin
 
 The API provides the following core endpoints:
 
-- **Auth**: `/auth` - Handles user registration, login, and token management.
-- **Health**: `/health` - System status and health checks.
-- **Users**: `/users` - User profile and management.
-- **Projects**: `/projects` - Management of projects and associated assets.
+### Auth (`/auth`)
+- `POST /register` - Register a new user.
+- `POST /login` - Login to obtain access and refresh tokens.
+- `POST /refresh` - Refresh access token.
+- `POST /logout` - Logout (requires authentication).
+
+### Health (`/health`)
+- `GET /` - Check system health status.
+
+### Users (`/users`)
+- `GET /:id` - Get user profile (requires authentication).
+- `DELETE /:id` - Delete user account (requires authentication).
+
+### Projects (`/projects`)
+- `POST /` - Create a project (requires authentication).
+- `GET /` - List user projects (requires authentication).
+- `GET /:id` - Get project details (requires authentication).
+- `PUT /:id` - Update project name (requires authentication).
+- `DELETE /:id` - Delete project and clean up associated assets (requires authentication).
+- `GET /:id/export` - Export project assets as a zip file (requires authentication).
+
+### Assets (`/assets`)
+- `POST /` - Upload an asset (requires authentication).
+- `GET /project/:projectId` - List assets by project (requires authentication).
+- `GET /:id` - Get asset details (requires authentication).
+- `GET /:id/versions` - List asset versions (requires authentication).
+- `POST /:assetId/versions/:versionId/manipulate` - Manipulate an asset version (requires authentication).
+- `DELETE /:id` - Delete an asset (requires authentication).
 
 For local development without Docker, you can run:
 ```bash
