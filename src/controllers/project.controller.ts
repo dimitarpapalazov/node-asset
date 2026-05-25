@@ -1,18 +1,14 @@
 import { Request, Response } from 'express';
 import * as projectService from '../services/project.service.js';
 import { HttpStatus } from '../constants/constants.js';
-import { getRequiredParam } from '../utils/params.js';
+import { getRequiredParam, validateRequiredFields } from '../utils/params.js';
 import { AppError } from '../utils/errors.js';
 
 export const createProject = async (req: Request, res: Response): Promise<void> => {
     try {
+        validateRequiredFields(req.body, ['name']);
         const { name } = req.body;
         const userId = req.user!.userId; // Assumes auth middleware populates req.user
-
-        if (!name) {
-            res.status(HttpStatus.BAD_REQUEST).json({ message: 'Project name is required' });
-            return;
-        }
 
         const project = await projectService.createProject({ name, userId });
         res.status(HttpStatus.CREATED).json(project);
@@ -34,13 +30,9 @@ export const getUserProjects = async (req: Request, res: Response): Promise<void
 export const updateProject = async (req: Request, res: Response): Promise<void> => {
     try {
         const id = getRequiredParam(req, 'id');
+        validateRequiredFields(req.body, ['name']);
         const { name } = req.body;
         const userId = req.user!.userId;
-
-        if (!name) {
-            res.status(HttpStatus.BAD_REQUEST).json({ message: 'Project name is required' });
-            return;
-        }
 
         const project = await projectService.updateProject(id, userId, name);
 
