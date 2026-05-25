@@ -9,6 +9,8 @@
     "local-start": "./scripts/start.sh",
     "dev": "npm run build && npm run start-local",
     "docker-up": "docker compose up --build",
+    "docker-down": "docker compose down -v",
+    "docker-clean": "docker system prune -f && docker builder prune -f",
     "drizzle-generate": "npx drizzle-kit generate",
     "drizzle-migrate": "npx drizzle-kit migrate",
     "test": "vitest"
@@ -40,7 +42,7 @@
     "vitest": "^4.1.7"
   },
   "dependencies": {
-    "archiver": "^8.0.0",
+    "archiver": "^7.0.1",
     "argon2": "^0.44.0",
     "cookie-parser": "^1.4.7",
     "drizzle-orm": "^0.45.2",

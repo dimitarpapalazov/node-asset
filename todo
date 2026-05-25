@@ -8,6 +8,7 @@ add worker for export
 add worker for manipulation
 add readme
 cache control?
+import project?
 
 done:
 init git
