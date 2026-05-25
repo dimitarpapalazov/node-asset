@@ -58,6 +58,28 @@ export const deleteProject = async (req: Request, res: Response): Promise<void> 
     }
 };
 
+export const exportProject = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const id = getRequiredParam(req, 'id');
+        const { archive, projectName } = await projectService.exportProject(id);
+
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename="${projectName}.zip"`);
+
+        archive.pipe(res);
+
+        archive.on('error', (err) => {
+            console.error('Error during project export:', err);
+            if (!res.headersSent) {
+                res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Error during project export' });
+            }
+        });
+
+    } catch (error) {
+        handleError(res, error, 'Error exporting project');
+    }
+};
+
 function handleError(res: Response, error: unknown, fallbackMessage: string): void {
     if (error instanceof AppError) {
         res.status(error.statusCode).json({ message: error.message });

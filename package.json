@@ -26,6 +26,7 @@
   },
   "homepage": "https://github.com/dimitarpapalazov/node-asset#readme",
   "devDependencies": {
+    "@types/archiver": "^7.0.0",
     "@types/cookie-parser": "^1.4.10",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
@@ -39,6 +40,7 @@
     "vitest": "^4.1.7"
   },
   "dependencies": {
+    "archiver": "^8.0.0",
     "argon2": "^0.44.0",
     "cookie-parser": "^1.4.7",
     "drizzle-orm": "^0.45.2",

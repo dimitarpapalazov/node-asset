@@ -1,6 +1,6 @@
 todo:
-add export project logic
 add download key logic
+delete assets when deleting project
 add logging
 add error handler
 add rabbitmq
@@ -31,3 +31,4 @@ add assets table
 add assets_versions table
 add versions logic
 field validation logic
+add export project logic

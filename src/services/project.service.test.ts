@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as projectService from './project.service.js';
 import { db } from '../db/index.js';
+import * as assetService from './asset.service.js';
+import { storageService } from './storage.service.js';
+import archiver from 'archiver';
+import sharp from 'sharp';
 
 vi.mock('../db/index.js', () => ({
     db: {
@@ -10,6 +14,38 @@ vi.mock('../db/index.js', () => ({
         delete: vi.fn(),
     }
 }));
+
+vi.mock('./asset.service.js', () => ({
+    getLatestVersion: vi.fn(),
+}));
+
+vi.mock('./storage.service.js', () => ({
+    storageService: {
+        get: vi.fn(),
+    },
+}));
+
+vi.mock('archiver', () => {
+    const mockArchiver = {
+        append: vi.fn().mockReturnThis(),
+        finalize: vi.fn().mockResolvedValue(undefined),
+        pipe: vi.fn().mockReturnThis(),
+        on: vi.fn().mockReturnThis(),
+        emit: vi.fn(),
+    };
+    return { default: vi.fn(() => mockArchiver) };
+});
+
+vi.mock('sharp', () => {
+    const mockSharp = {
+        resize: vi.fn().mockReturnThis(),
+        toFormat: vi.fn().mockReturnThis(),
+        toBuffer: vi.fn().mockResolvedValue(Buffer.from('processed-image')),
+    };
+    const sharpFn = vi.fn(() => mockSharp);
+    (sharpFn as any).cache = vi.fn();
+    return { default: sharpFn };
+});
 
 const mockedDb = db as any;
 
@@ -81,6 +117,47 @@ describe('Project Service', () => {
             
             expect(mockedDb.delete).toHaveBeenCalled();
             expect(queryBuilder.where).toHaveBeenCalled();
+        });
+    });
+
+    describe('exportProject', () => {
+        it('should create a zip archive with data.json and processed assets', async () => {
+            const mockProject = { id: 'p1', name: 'My Project' };
+            const mockAssets = [{ id: 'a1', name: 'image' }];
+            const mockVersion = { hash: 'h1', format: 'png', width: 100, height: 100 };
+
+            mockedDb.select.mockReturnValueOnce({
+                from: vi.fn().mockReturnThis(),
+                where: vi.fn().mockResolvedValue([mockProject])
+            });
+
+            mockedDb.select.mockReturnValueOnce({
+                from: vi.fn().mockReturnThis(),
+                where: vi.fn().mockResolvedValue(mockAssets)
+            });
+
+            vi.mocked(assetService.getLatestVersion).mockResolvedValue(mockVersion as any);
+            vi.mocked(storageService.get).mockResolvedValue(Buffer.from('raw-image'));
+
+            const { archive, projectName } = await projectService.exportProject('p1');
+
+            expect(projectName).toBe('My Project');
+            expect(archiver).toHaveBeenCalledWith('zip', expect.any(Object));
+            
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            expect(archive.append).toHaveBeenCalledWith(expect.stringContaining('My Project'), { name: 'data.json' });
+            expect(archive.append).toHaveBeenCalledWith(Buffer.from('processed-image'), { name: 'assets/image.png' });
+            expect(archive.finalize).toHaveBeenCalled();
+        });
+
+        it('should throw error if project not found', async () => {
+            mockedDb.select.mockReturnValue({
+                from: vi.fn().mockReturnThis(),
+                where: vi.fn().mockResolvedValue([])
+            });
+
+            await expect(projectService.exportProject('non-existent')).rejects.toThrow('Project not found');
         });
     });
 });

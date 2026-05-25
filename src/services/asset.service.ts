@@ -1,13 +1,14 @@
 import { db } from '../db/index.js';
 import { assets, assetVersions } from '../db/schema.js';
-import { eq, desc, ne, and, inArray } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { storageService } from './storage.service.js';
+import { AssetFit } from '../constants/constants.js';
 import sharp from 'sharp';
 
 export interface ManipulationOptions {
     width?: number;
     height?: number;
-    fit?: 'cover' | 'contain' | 'fill' | 'inside' | 'outside';
+    fit?: AssetFit;
     format?: keyof sharp.FormatEnum;
 }
 
@@ -83,7 +84,7 @@ export const manipulateAsset = async (assetId: string, versionId: string, option
     if (resizeOptions.width || resizeOptions.height) {
         pipeline = pipeline.resize({
             ...resizeOptions,
-            fit: resizeOptions.fit || 'cover'
+            fit: resizeOptions.fit || AssetFit.COVER
         });
     }
     
@@ -111,17 +112,14 @@ export const manipulateAsset = async (assetId: string, versionId: string, option
 };
 
 export const deleteAsset = async (id: string): Promise<void> => {
-    // 1. Get all unique hashes used by this asset's versions
     const versions = await db.select({ hash: assetVersions.hash })
         .from(assetVersions)
         .where(eq(assetVersions.assetId, id));
     
     const uniqueHashes = [...new Set(versions.map(v => v.hash))];
 
-    // 2. Delete the asset (cascades to asset_versions in DB)
     await db.delete(assets).where(eq(assets.id, id));
 
-    // 3. For each hash, check if it's still used by any other asset
     for (const hash of uniqueHashes) {
         const [otherReference] = await db.select({ id: assetVersions.id })
             .from(assetVersions)
@@ -129,7 +127,6 @@ export const deleteAsset = async (id: string): Promise<void> => {
             .limit(1);
         
         if (!otherReference) {
-            // No other asset versions use this hash, safe to delete from storage
             await storageService.delete(hash);
         }
     }

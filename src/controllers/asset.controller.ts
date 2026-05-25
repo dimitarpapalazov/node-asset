@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import * as assetService from '../services/asset.service.js';
-import { HttpStatus } from '../constants/constants.js';
+import { HttpStatus, AssetFit } from '../constants/constants.js';
 import { NotFoundError, InvalidParamError } from '../utils/errors.js';
 import { getRequiredParam, validateRequiredFields } from '../utils/params.js';
 
@@ -82,13 +82,13 @@ const parseManipulationOptions = (body: any): assetService.ManipulationOptions =
     }
 
     if (body.fit !== undefined) {
-        const validFits = ['cover', 'contain', 'fill', 'inside', 'outside'];
+        const validFits = Object.values(AssetFit);
 
-        if (!validFits.includes(body.fit)) {
+        if (!validFits.includes(body.fit as AssetFit)) {
             throw new InvalidParamError(`Field "fit" must be one of: ${validFits.join(', ')}.`);
         }
 
-        options.fit = body.fit as assetService.ManipulationOptions['fit'];
+        options.fit = body.fit as AssetFit;
     }
 
     if (body.format !== undefined) {
