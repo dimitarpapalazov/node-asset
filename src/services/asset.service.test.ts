@@ -181,9 +181,64 @@ describe('Asset Service', () => {
     });
 
     describe('deleteAsset', () => {
-        it('should delete the asset from database', async () => {
-            await assetService.deleteAsset('asset-1');
-            expect(db.delete).toHaveBeenCalled();
+        it('should delete from storage if no other asset uses the hash', async () => {
+            const assetId = 'asset-1';
+            const hash = 'unique-hash';
+            
+            // 1. Mock select versions for this asset
+            (db.select as any).mockReturnValueOnce({
+                from: vi.fn(() => ({
+                    where: vi.fn(() => Promise.resolve([{ hash }])),
+                })),
+            });
+
+            // 2. Mock asset deletion
+            (db.delete as any).mockReturnValue({
+                where: vi.fn(() => Promise.resolve()),
+            });
+
+            // 3. Mock reference check (no other references)
+            (db.select as any).mockReturnValueOnce({
+                from: vi.fn(() => ({
+                    where: vi.fn(() => ({
+                        limit: vi.fn(() => Promise.resolve([])),
+                    })),
+                })),
+            });
+
+            await assetService.deleteAsset(assetId);
+
+            expect(storageService.delete).toHaveBeenCalledWith(hash);
+        });
+
+        it('should NOT delete from storage if another asset uses the hash', async () => {
+            const assetId = 'asset-1';
+            const hash = 'shared-hash';
+            
+            // 1. Mock select versions for this asset
+            (db.select as any).mockReturnValueOnce({
+                from: vi.fn(() => ({
+                    where: vi.fn(() => Promise.resolve([{ hash }])),
+                })),
+            });
+
+            // 2. Mock asset deletion
+            (db.delete as any).mockReturnValue({
+                where: vi.fn(() => Promise.resolve()),
+            });
+
+            // 3. Mock reference check (has other references)
+            (db.select as any).mockReturnValueOnce({
+                from: vi.fn(() => ({
+                    where: vi.fn(() => ({
+                        limit: vi.fn(() => Promise.resolve([{ id: 'other-v' }])),
+                    })),
+                })),
+            });
+
+            await assetService.deleteAsset(assetId);
+
+            expect(storageService.delete).not.toHaveBeenCalled();
         });
     });
 });
