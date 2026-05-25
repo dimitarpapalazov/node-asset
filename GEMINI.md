@@ -18,6 +18,7 @@ This is a backend API project built with TypeScript and Express.js. The goal is 
     - `src/db`: Database schema (Drizzle) and connection setup.
     - `src/routes`: API endpoint definitions.
     - `src/utils`: Reusable helper functions (e.g., environment, shutdown).
+- **Storage Lifecycle:** Ensure all file deletion operations trigger necessary storage cleanup (Content-Addressable Storage) to prevent orphaned files.
 - **Environment Management:** Always use `envOrThrow` from `src/utils/env.ts` for environment variable access to ensure validation at startup.
 - **Testing (TDD):** 
     - Mandate a Test-Driven Development (TDD) approach for all new features and bug fixes.
@@ -25,6 +26,7 @@ This is a backend API project built with TypeScript and Express.js. The goal is 
     - Use **Vitest** for unit and integration testing.
     - Test files must use the `.test.ts` extension and be placed alongside the code they test.
     - Prioritize high test coverage for Services and Utilities.
+- **Documentation:** Always update `README.md` to reflect changes in API surface area, features, or project structure as part of the implementation task.
 - **Authentication:** Use JWTs with access/refresh tokens. Access tokens should be short-lived and stateless; refresh tokens are validated against `tokenVersion` in the DB for secure revocation.
 
 ## Workflow
