@@ -1,5 +1,4 @@
 todo:
-field validation logic
 add export project logic
 add download key logic
 add logging
@@ -31,3 +30,4 @@ add file management logic
 add assets table
 add assets_versions table
 add versions logic
+field validation logic

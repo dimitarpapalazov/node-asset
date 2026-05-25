@@ -98,14 +98,33 @@ describe('Asset Service', () => {
                 })),
             });
 
-            const options = { width: 50, fit: 'cover' as const };
+            const options: assetService.ManipulationOptions = { width: 50, fit: 'cover' };
             const result = await assetService.manipulateAsset('a1', 'v1', options);
 
             expect(storageService.get).toHaveBeenCalledWith('h1');
             const sharpInstance = vi.mocked(sharp).mock.results[0].value;
-            expect(sharpInstance.resize).toHaveBeenCalledWith(options);
+            expect(sharpInstance.resize).toHaveBeenCalledWith({ width: 50, fit: 'cover' });
             expect(storageService.save).toHaveBeenCalledWith(Buffer.from('processed-data'));
             expect(result).toHaveProperty('id', 'v2');
+        });
+
+        it('should use default "cover" fit if not specified but width/height is present', async () => {
+            const existingVersion = { id: 'v1', assetId: 'a1', hash: 'h1', format: 'png' };
+            (db.select as any).mockReturnValue({
+                from: vi.fn(() => ({
+                    where: vi.fn(() => [existingVersion]),
+                })),
+            });
+            (db.insert as any).mockReturnValue({
+                values: vi.fn(() => ({
+                    returning: vi.fn(() => [{ id: 'v2' }]),
+                })),
+            });
+
+            await assetService.manipulateAsset('a1', 'v1', { width: 100 });
+            
+            const sharpInstance = vi.mocked(sharp).mock.results[0].value;
+            expect(sharpInstance.resize).toHaveBeenCalledWith({ width: 100, fit: 'cover' });
         });
     });
 

@@ -4,7 +4,10 @@ import { eq, desc } from 'drizzle-orm';
 import { storageService } from './storage.service.js';
 import sharp from 'sharp';
 
-export interface ManipulationOptions extends sharp.ResizeOptions {
+export interface ManipulationOptions {
+    width?: number;
+    height?: number;
+    fit?: 'cover' | 'contain' | 'fill' | 'inside' | 'outside';
     format?: keyof sharp.FormatEnum;
 }
 
@@ -77,8 +80,11 @@ export const manipulateAsset = async (assetId: string, versionId: string, option
     
     const { format, ...resizeOptions } = options;
     
-    if (Object.keys(resizeOptions).length > 0) {
-        pipeline = pipeline.resize(resizeOptions);
+    if (resizeOptions.width || resizeOptions.height) {
+        pipeline = pipeline.resize({
+            ...resizeOptions,
+            fit: resizeOptions.fit || 'cover'
+        });
     }
     
     if (format) {

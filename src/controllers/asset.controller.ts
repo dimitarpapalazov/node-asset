@@ -24,7 +24,7 @@ export const uploadAsset = async (req: Request, res: Response): Promise<void> =>
 export const manipulateAsset = async (req: Request, res: Response): Promise<void> => {
     const assetId = getRequiredParam(req, 'assetId');
     const versionId = getRequiredParam(req, 'versionId');
-    const options = req.body;
+    const options = parseManipulationOptions(req.body);
 
     const newVersion = await assetService.manipulateAsset(assetId, versionId, options);
 
@@ -56,4 +56,44 @@ export const deleteAsset = async (req: Request, res: Response): Promise<void> =>
     await assetService.deleteAsset(id);
 
     res.status(HttpStatus.NO_CONTENT).send();
+};
+
+const parseManipulationOptions = (body: any): assetService.ManipulationOptions => {
+    const options: assetService.ManipulationOptions = {};
+
+    if (body.width !== undefined) {
+        const width = parseInt(body.width, 10);
+
+        if (isNaN(width)) {
+            throw new InvalidParamError('Field "width" must be a number.');
+        }
+
+        options.width = width;
+    }
+
+    if (body.height !== undefined) {
+        const height = parseInt(body.height, 10);
+
+        if (isNaN(height)) {
+            throw new InvalidParamError('Field "height" must be a number.');
+        }
+
+        options.height = height;
+    }
+
+    if (body.fit !== undefined) {
+        const validFits = ['cover', 'contain', 'fill', 'inside', 'outside'];
+
+        if (!validFits.includes(body.fit)) {
+            throw new InvalidParamError(`Field "fit" must be one of: ${validFits.join(', ')}.`);
+        }
+
+        options.fit = body.fit as assetService.ManipulationOptions['fit'];
+    }
+
+    if (body.format !== undefined) {
+        options.format = body.format as assetService.ManipulationOptions['format'];
+    }
+
+    return options;
 };
