@@ -15,6 +15,11 @@ export interface Config {
     port: number;
 
     /**
+     * The environment (development, production).
+     */
+    env: string;
+
+    /**
      * Database configuration.
      */
     db: {
@@ -56,6 +61,7 @@ const dbName = envOrThrow('DB_NAME');
  */
 export const config: Config = {
     port: parseInt(envOrThrow('PORT'), 10),
+    env: process.env.NODE_ENV || 'development',
     db: {
         host: dbHost,
         port: parseInt(dbPort, 10),
