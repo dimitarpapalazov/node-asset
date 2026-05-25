@@ -58,6 +58,19 @@ export const getAsset = async (req: Request, res: Response): Promise<void> => {
     res.status(HttpStatus.OK).json({ ...asset, latestVersion });
 };
 
+export const getAssetsByProject = async (req: Request, res: Response): Promise<void> => {
+    const projectId = getRequiredParam(req, 'projectId');
+    const userId = req.user!.userId;
+
+    // Authorize: Check if project belongs to user
+    const project = await projectService.getProjectByIdAndUserId(projectId, userId);
+    if (!project) throw new NotFoundError('Project not found or unauthorized');
+
+    const assets = await assetService.getAssetsByProjectId(projectId);
+
+    res.status(HttpStatus.OK).json(assets);
+};
+
 export const getAssetVersions = async (req: Request, res: Response): Promise<void> => {
     const id = getRequiredParam(req, 'id');
     const userId = req.user!.userId;

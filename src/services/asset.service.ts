@@ -57,6 +57,12 @@ export const getAssetByIdAndUserId = async (id: string, userId: string): Promise
     return asset;
 };
 
+export const getAssetsByProjectId = async (projectId: string): Promise<Asset[]> => {
+    return await db.select()
+        .from(assets)
+        .where(eq(assets.projectId, projectId));
+};
+
 export const getLatestVersion = async (assetId: string): Promise<AssetVersion | undefined> => {
     const [version] = await db.select()
         .from(assetVersions)

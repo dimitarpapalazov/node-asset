@@ -10,6 +10,7 @@ vi.mock('../services/asset.service.js', () => ({
     uploadAsset: vi.fn(),
     getAssetByIdAndUserId: vi.fn(),
     getAssetById: vi.fn(),
+    getAssetsByProjectId: vi.fn(),
     getLatestVersion: vi.fn(),
     getAllVersions: vi.fn(),
     deleteAsset: vi.fn(),
@@ -27,6 +28,7 @@ describe('Asset Controller', () => {
         vi.clearAllMocks();
         req = {
             params: {},
+            query: {},
             body: {},
             user: { userId: 'user-1' },
         };
@@ -35,6 +37,33 @@ describe('Asset Controller', () => {
             json: vi.fn().mockReturnThis(),
             send: vi.fn().mockReturnThis(),
         };
+    });
+
+    describe('getAssetsByProject', () => {
+        it('should return assets if authorized', async () => {
+            req.params = { projectId: 'p1' };
+            req.query = { projectId: 'p1' };
+            
+            const mockProject = { id: 'p1', userId: 'user-1' };
+            vi.mocked(projectService.getProjectByIdAndUserId).mockResolvedValue(mockProject as any);
+            
+            const mockAssets = [{ id: 'a1' }];
+            vi.mocked(assetService.getAssetsByProjectId).mockResolvedValue(mockAssets as any);
+
+            await assetController.getAssetsByProject(req, res);
+
+            expect(assetService.getAssetsByProjectId).toHaveBeenCalledWith('p1');
+            expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
+            expect(res.json).toHaveBeenCalledWith(mockAssets);
+        });
+
+        it('should throw error if unauthorized', async () => {
+            req.params = { projectId: 'p1' };
+            req.query = { projectId: 'p1' };
+            vi.mocked(projectService.getProjectByIdAndUserId).mockResolvedValue(undefined);
+
+            await expect(assetController.getAssetsByProject(req, res)).rejects.toThrow('Project not found or unauthorized');
+        });
     });
 
     describe('manipulateAsset', () => {
