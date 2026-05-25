@@ -1,6 +1,6 @@
 import { db } from '../db/index.js';
-import { projects, assets } from '../db/schema.js';
-import { eq, and } from 'drizzle-orm';
+import { projects, assets, assetVersions } from '../db/schema.js';
+import { eq, and, inArray } from 'drizzle-orm';
 import archiver from 'archiver';
 import sharp from 'sharp';
 import * as assetService from './asset.service.js';
@@ -57,8 +57,39 @@ export const updateProject = async (id: string, userId: string, name: string): P
 };
 
 export const deleteProject = async (id: string, userId: string): Promise<void> => {
+    // 1. Find all assets associated with the project
+    const projectAssets = await db.select({ id: assets.id })
+        .from(assets)
+        .where(eq(assets.projectId, id));
+
+    const assetIds = projectAssets.map(a => a.id);
+
+    let hashesToDelete: string[] = [];
+
+    if (assetIds.length > 0) {
+        // 2. Get all asset versions for these assets
+        const versions = await db.select({ hash: assetVersions.hash })
+            .from(assetVersions)
+            .where(inArray(assetVersions.assetId, assetIds));
+
+        hashesToDelete = [...new Set(versions.map(v => v.hash))];
+    }
+
+    // 3. Delete the project (cascades to assets and assetVersions)
     await db.delete(projects)
         .where(and(eq(projects.id, id), eq(projects.userId, userId)));
+
+    // 4. Delete files from storage if no longer referenced
+    for (const hash of hashesToDelete) {
+        const [otherReference] = await db.select({ id: assetVersions.id })
+            .from(assetVersions)
+            .where(eq(assetVersions.hash, hash))
+            .limit(1);
+        
+        if (!otherReference) {
+            await storageService.delete(hash);
+        }
+    }
 };
 
 export const exportProject = async (projectId: string, userId: string): Promise<{ archive: archiver.Archiver, projectName: string }> => {

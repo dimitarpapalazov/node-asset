@@ -1,12 +1,11 @@
 todo:
-delete assets when deleting project
+add readme
 add logging
 add error handler
 add download key logic
 add rabbitmq
 add worker for export
 add worker for manipulation
-add readme
 cache control?
 import project?
 
@@ -33,3 +32,4 @@ add assets_versions table
 add versions logic
 field validation logic
 add export project logic
+delete assets when deleting project

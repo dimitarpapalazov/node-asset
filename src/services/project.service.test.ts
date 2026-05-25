@@ -22,6 +22,7 @@ vi.mock('./asset.service.js', () => ({
 vi.mock('./storage.service.js', () => ({
     storageService: {
         get: vi.fn(),
+        delete: vi.fn(),
     },
 }));
 
@@ -108,6 +109,12 @@ describe('Project Service', () => {
 
     describe('deleteProject', () => {
         it('should delete a project if owned by user', async () => {
+            // Mock finding assets
+            mockedDb.select.mockReturnValueOnce({
+                from: vi.fn().mockReturnThis(),
+                where: vi.fn().mockResolvedValue([])
+            });
+
             const queryBuilder = {
                 where: vi.fn().mockResolvedValue(undefined)
             };
@@ -117,6 +124,37 @@ describe('Project Service', () => {
             
             expect(mockedDb.delete).toHaveBeenCalled();
             expect(queryBuilder.where).toHaveBeenCalled();
+        });
+
+        it('should delete project and clean up storage', async () => {
+            const mockAssets = [{ id: 'a1' }];
+            const mockVersions = [{ hash: 'h1' }];
+            
+            // Mock finding assets
+            mockedDb.select.mockReturnValueOnce({
+                from: vi.fn().mockReturnThis(),
+                where: vi.fn().mockResolvedValue(mockAssets)
+            });
+            // Mock finding versions
+            mockedDb.select.mockReturnValueOnce({
+                from: vi.fn().mockReturnThis(),
+                where: vi.fn().mockResolvedValue(mockVersions)
+            });
+            // Mock other references check (returns empty, meaning no other references)
+            mockedDb.select.mockReturnValueOnce({
+                from: vi.fn().mockReturnThis(),
+                where: vi.fn().mockReturnThis(),
+                limit: vi.fn().mockResolvedValue([])
+            });
+
+            const deleteQueryBuilder = {
+                where: vi.fn().mockResolvedValue(undefined)
+            };
+            mockedDb.delete.mockReturnValue(deleteQueryBuilder);
+            
+            await projectService.deleteProject('p1', 'user1');
+            
+            expect(storageService.delete).toHaveBeenCalledWith('h1');
         });
     });
 
@@ -144,7 +182,7 @@ describe('Project Service', () => {
             expect(projectName).toBe('My Project');
             expect(archiver).toHaveBeenCalledWith('zip', expect.any(Object));
             
-            await new Promise(resolve => setTimeout(resolve, 10));
+            await vi.waitFor(() => expect(archive.finalize).toHaveBeenCalled());
 
             expect(archive.append).toHaveBeenCalledWith(expect.stringContaining('My Project'), { name: 'data.json' });
             expect(archive.append).toHaveBeenCalledWith(Buffer.from('processed-image'), { name: 'assets/image.png' });
