@@ -3,6 +3,10 @@ import { users } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
 import * as argon2 from 'argon2';
 import { ConflictError } from '../utils/errors.js';
+import { logger } from './logger/logger.factory.js';
+import { LogLevel } from './logger/index.js';
+import { config } from '../config/config.js';
+
 
 export interface CreateUserInput {
     email: string;
@@ -32,6 +36,14 @@ export const createUser = async (input: CreateUserInput): Promise<UserResponse> 
         })
         .returning();
 
+    logger.log({
+        timestamp: new Date().toISOString(),
+        level: LogLevel.INFO,
+        message: `User created: ${user.id}`,
+        environment: config.env,
+        traceId: 'system',
+    });
+
     return toUserResponse(user);
 };
 
@@ -54,6 +66,14 @@ export const getUserByEmail = async (email: string): Promise<UserResponse | unde
 export const deleteUser = async (id: string): Promise<void> => {
     await db.delete(users)
         .where(eq(users.id, id));
+
+    logger.log({
+        timestamp: new Date().toISOString(),
+        level: LogLevel.INFO,
+        message: `User record deleted from DB: ${id}`,
+        environment: config.env,
+        traceId: 'system',
+    });
 };
 
 /**

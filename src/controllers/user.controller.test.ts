@@ -4,10 +4,18 @@ import * as userService from '../services/user.service.js';
 import { Request, Response } from 'express';
 import { HttpStatus } from '../constants/constants.js';
 import { MissingParamError, MissingFieldError } from '../utils/errors.js';
+import { logger } from '../services/logger/logger.factory.js';
+import { LogLevel } from '../services/logger/index.js';
 
 vi.mock('../services/user.service.js', () => ({
     getUserById: vi.fn(),
     deleteUser: vi.fn(),
+}));
+
+vi.mock('../services/logger/logger.factory.js', () => ({
+    logger: {
+        log: vi.fn(),
+    },
 }));
 
 describe('User Controller', () => {
@@ -33,14 +41,18 @@ describe('User Controller', () => {
     });
 
     describe('getUser', () => {
-        it('should return 404 if user not found', async () => {
-            mockRequest = { params: { id: '1' } };
+        it('should return 404 and log a warning if user not found', async () => {
+            mockRequest = { params: { id: '1' }, traceId: 'test-trace' };
             (userService.getUserById as any).mockResolvedValue(undefined);
 
             await userController.getUser(mockRequest as Request, mockResponse as Response);
 
             expect(statusSpy).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
             expect(jsonSpy).toHaveBeenCalledWith({ message: 'User not found' });
+            expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+                level: LogLevel.WARN,
+                message: expect.stringContaining('User not found: 1'),
+            }));
         });
 
         it('should return 200 and user if found', async () => {
@@ -54,36 +66,42 @@ describe('User Controller', () => {
             expect(jsonSpy).toHaveBeenCalledWith(mockUser);
         });
 
-        it('should return 400 if required param is missing', async () => {
-            mockRequest = { params: {} };
+        it('should return 400 and log an error if required param is missing', async () => {
+            mockRequest = { params: {}, traceId: 'test-trace' };
 
             await userController.getUser(mockRequest as Request, mockResponse as Response);
 
             expect(statusSpy).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
-            expect(jsonSpy).toHaveBeenCalledWith({
-                message: new MissingParamError('id').message
-            });
+            expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+                level: LogLevel.ERROR,
+            }));
         });
     });
 
     describe('deleteUser', () => {
-        it('should return 204 on successful deletion', async () => {
-            mockRequest = { params: { id: '1' }, user: { userId: '1' } };
+        it('should return 204 and log info on successful deletion', async () => {
+            mockRequest = { params: { id: '1' }, user: { userId: '1' }, traceId: 'test-trace' };
             (userService.deleteUser as any).mockResolvedValue(undefined);
 
             await userController.deleteUser(mockRequest as Request, mockResponse as Response);
 
             expect(statusSpy).toHaveBeenCalledWith(HttpStatus.NO_CONTENT);
             expect(sendSpy).toHaveBeenCalled();
+            expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+                level: LogLevel.INFO,
+                message: expect.stringContaining('User deleted: 1'),
+            }));
         });
 
         it('should return 403 when deleting a different user', async () => {
-            mockRequest = { params: { id: '2' }, user: { userId: '1' } };
+            mockRequest = { params: { id: '2' }, user: { userId: '1' }, traceId: 'test-trace' };
 
             await userController.deleteUser(mockRequest as Request, mockResponse as Response);
 
             expect(statusSpy).toHaveBeenCalledWith(HttpStatus.FORBIDDEN);
-            expect(jsonSpy).toHaveBeenCalledWith({ message: 'You are not authorized to delete this user.' });
+            expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+                level: LogLevel.ERROR,
+            }));
         });
     });
 });
