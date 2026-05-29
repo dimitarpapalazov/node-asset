@@ -3,6 +3,8 @@ import * as assetService from './asset.service.js';
 import { db } from '../db/index.js';
 import { storageService } from './storage.service.js';
 import sharp from 'sharp';
+import { logger } from './logger/logger.factory.js';
+import { LogLevel } from './logger/index.js';
 
 // Mock dependencies
 vi.mock('../db/index.js', () => ({
@@ -33,6 +35,12 @@ vi.mock('./storage.service.js', () => ({
         get: vi.fn().mockResolvedValue(Buffer.from('fake-data')),
         exists: vi.fn().mockResolvedValue(true),
         delete: vi.fn().mockResolvedValue(undefined),
+    },
+}));
+
+vi.mock('./logger/logger.factory.js', () => ({
+    logger: {
+        log: vi.fn(),
     },
 }));
 
@@ -77,6 +85,10 @@ describe('Asset Service', () => {
             expect(db.insert).toHaveBeenCalledTimes(2);
             expect(result).toHaveProperty('id', 'asset-1');
             expect(result.latestVersion).toHaveProperty('hash', 'fake-hash');
+            expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+                level: LogLevel.INFO,
+                message: expect.stringContaining('Asset created in DB: asset-1'),
+            }));
         });
     });
 
@@ -106,6 +118,10 @@ describe('Asset Service', () => {
             expect(sharpInstance.resize).toHaveBeenCalledWith({ width: 50, fit: 'cover' });
             expect(storageService.save).toHaveBeenCalledWith(Buffer.from('processed-data'));
             expect(result).toHaveProperty('id', 'v2');
+            expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+                level: LogLevel.INFO,
+                message: expect.stringContaining('New asset version created: v2 for asset a1'),
+            }));
         });
 
         it('should use default "cover" fit if not specified but width/height is present', async () => {
@@ -209,6 +225,10 @@ describe('Asset Service', () => {
             await assetService.deleteAsset(assetId);
 
             expect(storageService.delete).toHaveBeenCalledWith(hash);
+            expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+                level: LogLevel.INFO,
+                message: expect.stringContaining('Asset record deleted from DB: asset-1'),
+            }));
         });
 
         it('should NOT delete from storage if another asset uses the hash', async () => {
@@ -239,6 +259,10 @@ describe('Asset Service', () => {
             await assetService.deleteAsset(assetId);
 
             expect(storageService.delete).not.toHaveBeenCalled();
+            expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+                level: LogLevel.INFO,
+                message: expect.stringContaining('Asset record deleted from DB: asset-1'),
+            }));
         });
     });
 });

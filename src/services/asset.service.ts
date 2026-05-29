@@ -4,6 +4,9 @@ import { eq, and, desc } from 'drizzle-orm';
 import { storageService } from './storage.service.js';
 import { AssetFit } from '../constants/constants.js';
 import sharp from 'sharp';
+import { logger } from './logger/logger.factory.js';
+import { LogLevel } from './logger/index.js';
+import { config } from '../config/config.js';
 
 export interface ManipulationOptions {
     width?: number;
@@ -37,6 +40,15 @@ export const uploadAsset = async (userId: string, projectId: string, name: strin
             height: metadata.height,
         })
         .returning();
+
+    logger.log({
+        timestamp: new Date().toISOString(),
+        level: LogLevel.INFO,
+        message: `Asset created in DB: ${asset.id}`,
+        userId,
+        environment: config.env,
+        traceId: 'system',
+    });
     
     return { ...asset, latestVersion: version };
 };
@@ -121,6 +133,14 @@ export const manipulateAsset = async (assetId: string, versionId: string, option
             params: options,
         })
         .returning();
+
+    logger.log({
+        timestamp: new Date().toISOString(),
+        level: LogLevel.INFO,
+        message: `New asset version created: ${newVersion.id} for asset ${assetId}`,
+        environment: config.env,
+        traceId: 'system',
+    });
     
     return newVersion;
 };
@@ -144,4 +164,12 @@ export const deleteAsset = async (id: string): Promise<void> => {
             await storageService.delete(hash);
         }
     }
+
+    logger.log({
+        timestamp: new Date().toISOString(),
+        level: LogLevel.INFO,
+        message: `Asset record deleted from DB: ${id}`,
+        environment: config.env,
+        traceId: 'system',
+    });
 };

@@ -5,6 +5,7 @@ import * as assetService from './asset.service.js';
 import { storageService } from './storage.service.js';
 import archiver from 'archiver';
 import sharp from 'sharp';
+import { logger } from './logger/logger.factory.js';
 
 vi.mock('../db/index.js', () => ({
     db: {
@@ -23,6 +24,12 @@ vi.mock('./storage.service.js', () => ({
     storageService: {
         get: vi.fn(),
         delete: vi.fn(),
+    },
+}));
+
+vi.mock('./logger/logger.factory.js', () => ({
+    logger: {
+        log: vi.fn(),
     },
 }));
 
@@ -68,6 +75,9 @@ describe('Project Service', () => {
 
             expect(result).toEqual(mockProject);
             expect(mockedDb.insert).toHaveBeenCalled();
+            expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+                message: expect.stringContaining('Project created in DB: 1'),
+            }));
         });
     });
 
@@ -104,6 +114,9 @@ describe('Project Service', () => {
             expect(queryBuilder.set).toHaveBeenCalled();
             expect(queryBuilder.where).toHaveBeenCalled();
             expect(queryBuilder.returning).toHaveBeenCalled();
+            expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+                message: expect.stringContaining('Project updated in DB: 1'),
+            }));
         });
     });
 
@@ -124,6 +137,9 @@ describe('Project Service', () => {
             
             expect(mockedDb.delete).toHaveBeenCalled();
             expect(queryBuilder.where).toHaveBeenCalled();
+            expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+                message: expect.stringContaining('Project record deleted from DB: 1'),
+            }));
         });
 
         it('should delete project and clean up storage', async () => {
@@ -155,6 +171,9 @@ describe('Project Service', () => {
             await projectService.deleteProject('p1', 'user1');
             
             expect(storageService.delete).toHaveBeenCalledWith('h1');
+            expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+                message: expect.stringContaining('Project record deleted from DB: p1'),
+            }));
         });
     });
 

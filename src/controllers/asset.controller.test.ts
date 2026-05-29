@@ -4,6 +4,13 @@ import * as assetService from '../services/asset.service.js';
 import * as projectService from '../services/project.service.js';
 import { InvalidParamError } from '../utils/errors.js';
 import { HttpStatus } from '../constants/constants.js';
+import { logger } from '../services/logger/logger.factory.js';
+
+vi.mock('../services/logger/logger.factory.js', () => ({
+    logger: {
+        log: vi.fn(),
+    },
+}));
 
 vi.mock('../services/asset.service.js', () => ({
     manipulateAsset: vi.fn(),
@@ -31,6 +38,7 @@ describe('Asset Controller', () => {
             query: {},
             body: {},
             user: { userId: 'user-1' },
+            traceId: 'test-trace-id',
         };
         res = {
             status: vi.fn().mockReturnThis(),
@@ -57,12 +65,17 @@ describe('Asset Controller', () => {
             expect(res.json).toHaveBeenCalledWith(mockAssets);
         });
 
-        it('should throw error if unauthorized', async () => {
+        it('should return 404 if unauthorized', async () => {
             req.params = { projectId: 'p1' };
             req.query = { projectId: 'p1' };
             vi.mocked(projectService.getProjectByIdAndUserId).mockResolvedValue(undefined);
 
-            await expect(assetController.getAssetsByProject(req, res)).rejects.toThrow('Project not found or unauthorized');
+            await assetController.getAssetsByProject(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+                message: expect.stringContaining('Project not found or unauthorized')
+            }));
         });
     });
 
@@ -87,22 +100,32 @@ describe('Asset Controller', () => {
             });
             expect(res.status).toHaveBeenCalledWith(HttpStatus.CREATED);
             expect(res.json).toHaveBeenCalledWith(mockVersion);
+            expect(logger.log).toHaveBeenCalled();
         });
 
-        it('should throw error if unauthorized', async () => {
+        it('should return 404 if unauthorized', async () => {
             req.params = { assetId: 'a1', versionId: 'v1' };
             vi.mocked(assetService.getAssetByIdAndUserId).mockResolvedValue(undefined);
 
-            await expect(assetController.manipulateAsset(req, res)).rejects.toThrow('Asset not found or unauthorized');
+            await assetController.manipulateAsset(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+                message: expect.stringContaining('Asset not found or unauthorized')
+            }));
         });
 
-        it('should throw InvalidParamError if width is not a number', async () => {
+        it('should return 400 if width is not a number', async () => {
             req.params = { assetId: 'a1', versionId: 'v1' };
             req.body = { width: 'invalid' };
             vi.mocked(assetService.getAssetByIdAndUserId).mockResolvedValue({ id: 'a1' } as any);
 
-            await expect(assetController.manipulateAsset(req, res)).rejects.toThrow(InvalidParamError);
-            await expect(assetController.manipulateAsset(req, res)).rejects.toThrow('Field "width" must be a number.');
+            await assetController.manipulateAsset(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+            expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+                message: expect.stringContaining('Field "width" must be a number.')
+            }));
         });
     });
 });

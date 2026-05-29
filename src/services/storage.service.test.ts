@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { rm, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
+import { logger } from './logger/logger.factory.js';
 
 // Mock config BEFORE importing StorageService
 vi.mock('../config/config.js', () => ({
@@ -9,6 +10,12 @@ vi.mock('../config/config.js', () => ({
             uploadsDir: 'test-uploads'
         }
     }
+}));
+
+vi.mock('./logger/logger.factory.js', () => ({
+    logger: {
+        log: vi.fn(),
+    },
 }));
 
 import { StorageService } from './storage.service.js';
@@ -31,6 +38,9 @@ describe('StorageService', () => {
         
         expect(hash).toBeDefined();
         expect(await storage.exists(hash)).toBe(true);
+        expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+            message: expect.stringContaining(`New file written to storage: ${hash}`),
+        }));
     });
 
     it('should retrieve saved content correctly', async () => {
@@ -52,14 +62,20 @@ describe('StorageService', () => {
         
         await storage.delete(hash);
         expect(await storage.exists(hash)).toBe(false);
+        expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+            message: expect.stringContaining(`File deleted from storage: ${hash}`),
+        }));
     });
 
     it('should handle duplicate saves (CAS)', async () => {
+        vi.clearAllMocks();
         const content = Buffer.from('duplicate content');
         const hash1 = await storage.save(content);
         const hash2 = await storage.save(content);
         
         expect(hash1).toBe(hash2);
         expect(await storage.exists(hash1)).toBe(true);
+        // Should only log once because it's CAS
+        expect(logger.log).toHaveBeenCalledTimes(1);
     });
 });

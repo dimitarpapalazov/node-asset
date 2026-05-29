@@ -6,6 +6,9 @@ import sharp from 'sharp';
 import * as assetService from './asset.service.js';
 import { storageService } from './storage.service.js';
 import { EXPORT_CONFIG, AssetFit } from '../constants/constants.js';
+import { logger } from './logger/logger.factory.js';
+import { LogLevel } from './logger/index.js';
+import { config } from '../config/config.js';
 
 export interface CreateProjectInput {
     name: string;
@@ -21,6 +24,15 @@ export const createProject = async (input: CreateProjectInput): Promise<Project>
             userId: input.userId,
         })
         .returning();
+
+    logger.log({
+        timestamp: new Date().toISOString(),
+        level: LogLevel.INFO,
+        message: `Project created in DB: ${project.id}`,
+        userId: input.userId,
+        environment: config.env,
+        traceId: 'system',
+    });
 
     return project;
 };
@@ -52,6 +64,17 @@ export const updateProject = async (id: string, userId: string, name: string): P
         .set({ name, updatedAt: new Date() })
         .where(and(eq(projects.id, id), eq(projects.userId, userId)))
         .returning();
+
+    if (project) {
+        logger.log({
+            timestamp: new Date().toISOString(),
+            level: LogLevel.INFO,
+            message: `Project updated in DB: ${id}`,
+            userId,
+            environment: config.env,
+            traceId: 'system',
+        });
+    }
 
     return project;
 };
@@ -90,6 +113,15 @@ export const deleteProject = async (id: string, userId: string): Promise<void> =
             await storageService.delete(hash);
         }
     }
+
+    logger.log({
+        timestamp: new Date().toISOString(),
+        level: LogLevel.INFO,
+        message: `Project record deleted from DB: ${id}`,
+        userId,
+        environment: config.env,
+        traceId: 'system',
+    });
 };
 
 export const exportProject = async (projectId: string, userId: string): Promise<{ archive: archiver.Archiver, projectName: string }> => {

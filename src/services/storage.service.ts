@@ -2,6 +2,8 @@ import { mkdir, writeFile, readFile, access, unlink } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { config } from '../config/config.js';
 import { computeHash } from '../utils/hash.js';
+import { logger } from './logger/logger.factory.js';
+import { LogLevel } from './logger/index.js';
 
 /**
  * Service for Content-Addressable Storage (CAS).
@@ -28,6 +30,14 @@ export class StorageService {
         // If file already exists, we don't need to overwrite it (CAS property)
         if (!await this.exists(hash)) {
             await writeFile(filePath, buffer);
+
+            logger.log({
+                timestamp: new Date().toISOString(),
+                level: LogLevel.INFO,
+                message: `New file written to storage: ${hash}`,
+                environment: config.env,
+                traceId: 'system',
+            });
         }
 
         return hash;
@@ -67,6 +77,14 @@ export class StorageService {
         const filePath = this.getFilePath(hash);
         if (await this.exists(hash)) {
             await unlink(filePath);
+
+            logger.log({
+                timestamp: new Date().toISOString(),
+                level: LogLevel.INFO,
+                message: `File deleted from storage: ${hash}`,
+                environment: config.env,
+                traceId: 'system',
+            });
         }
     }
 
