@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Request, Response, NextFunction } from 'express';
+import { ZodError, ZodIssue } from 'zod';
 import { errorMiddleware } from './error.middleware.js';
 import { AppError, NotFoundError } from '../utils/errors.js';
 import { HttpStatus } from '../constants/constants.js';
@@ -50,6 +51,30 @@ describe('errorMiddleware', () => {
             stack: expect.any(String),
         });
         expect(logger.log).toHaveBeenCalled();
+    });
+
+    it('should handle ZodError correctly', () => {
+        const issues: ZodIssue[] = [
+            {
+                code: 'invalid_type',
+                expected: 'string',
+                received: 'number',
+                path: ['body', 'email'],
+                message: 'Expected string, received number',
+            },
+        ];
+        const error = new ZodError(issues);
+
+        errorMiddleware(error, mockReq as Request, mockRes as Response, nextFunction);
+
+        expect(mockRes.status).toHaveBeenCalledWith(HttpStatus.BAD_REQUEST);
+        expect(mockRes.json).toHaveBeenCalledWith({
+            status: 'error',
+            message: 'Validation failed',
+            errors: [
+                { path: 'body.email', message: 'Expected string, received number' },
+            ],
+        });
     });
 
     it('should handle generic Error as 500', () => {

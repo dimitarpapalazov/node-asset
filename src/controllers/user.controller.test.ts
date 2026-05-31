@@ -43,8 +43,10 @@ describe('User Controller', () => {
     });
 
     describe('getUser', () => {
+        const validId = '123e4567-e89b-12d3-a456-426614174000';
+
         it('should throw NotFoundError if user not found', async () => {
-            mockRequest = { params: { id: '1' }, traceId: 'test-trace' };
+            mockRequest = { params: { id: validId }, traceId: 'test-trace' };
             (userService.getUserById as any).mockResolvedValue(undefined);
 
             await expect(userController.getUser(mockRequest as Request, mockResponse as Response))
@@ -52,8 +54,8 @@ describe('User Controller', () => {
         });
 
         it('should return 200 and user if found', async () => {
-            const mockUser = { id: '1', email: 'test@example.com' };
-            mockRequest = { params: { id: '1' } };
+            const mockUser = { id: validId, email: 'test@example.com' };
+            mockRequest = { params: { id: validId } };
             (userService.getUserById as any).mockResolvedValue(mockUser);
 
             await userController.getUser(mockRequest as Request, mockResponse as Response);
@@ -71,8 +73,10 @@ describe('User Controller', () => {
     });
 
     describe('deleteUser', () => {
+        const validId = '123e4567-e89b-12d3-a456-426614174000';
+
         it('should return 204 and log info on successful deletion', async () => {
-            mockRequest = { params: { id: '1' }, user: { userId: '1' }, traceId: 'test-trace' };
+            mockRequest = { params: { id: validId }, user: { userId: validId }, traceId: 'test-trace' };
             (userService.deleteUser as any).mockResolvedValue(undefined);
 
             await userController.deleteUser(mockRequest as Request, mockResponse as Response);
@@ -81,12 +85,13 @@ describe('User Controller', () => {
             expect(sendSpy).toHaveBeenCalled();
             expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
                 level: LogLevel.INFO,
-                message: expect.stringContaining('User deleted: 1'),
+                message: expect.stringContaining(`User deleted: ${validId}`),
             }));
         });
 
         it('should throw ForbiddenError when deleting a different user', async () => {
-            mockRequest = { params: { id: '2' }, user: { userId: '1' }, traceId: 'test-trace' };
+            const otherId = '00000000-0000-0000-0000-000000000000';
+            mockRequest = { params: { id: otherId }, user: { userId: validId }, traceId: 'test-trace' };
 
             await expect(userController.deleteUser(mockRequest as Request, mockResponse as Response))
                 .rejects.toThrow(ForbiddenError);

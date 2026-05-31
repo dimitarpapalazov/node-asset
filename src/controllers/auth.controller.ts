@@ -2,11 +2,12 @@ import { Request, Response } from 'express';
 import * as authService from '../services/auth.service.js';
 import * as userService from '../services/user.service.js';
 import { HttpStatus } from '../constants/constants.js';
-import { validateRequiredFields } from '../utils/params.js';
 import { UnauthorizedError } from '../utils/errors.js';
 import { config } from '../config/config.js';
 import { logger } from '../services/logger/logger.factory.js';
 import { LogLevel } from '../services/logger/index.js';
+import { loginSchema, registerSchema, refreshSchema } from '../schemas/auth.schema.js';
+import { InvalidParamError } from '../utils/errors.js';
 
 const cookieOptions = {
     httpOnly: true,
@@ -28,77 +29,100 @@ const parseDurationToMs = (duration: string): number => {
 };
 
 const setTokenCookies = (res: Response, tokens: { accessToken: string, refreshToken: string }) => {
-    res.cookie('accessToken', tokens.accessToken, { 
-        ...cookieOptions, 
-        maxAge: parseDurationToMs(config.jwt.accessExpiry) 
+    res.cookie('accessToken', tokens.accessToken, {
+        ...cookieOptions,
+        maxAge: parseDurationToMs(config.jwt.accessExpiry)
     });
-    res.cookie('refreshToken', tokens.refreshToken, { 
-        ...cookieOptions, 
-        maxAge: parseDurationToMs(config.jwt.refreshExpiry) 
+    res.cookie('refreshToken', tokens.refreshToken, {
+        ...cookieOptions,
+        maxAge: parseDurationToMs(config.jwt.refreshExpiry)
     });
 };
 
 export const register = async (req: Request, res: Response): Promise<void> => {
-    validateRequiredFields(req.body, ['email', 'password']);
+    try {
+        const validated = await registerSchema.parseAsync({
+            body: req.body,
+        });
+        const body = validated.body;
+        const user = await userService.createUser(body);
+        const tokens = await authService.login(body.email, body.password);
+        setTokenCookies(res, tokens);
 
-    const user = await userService.createUser(req.body);
-    const tokens = await authService.login(req.body.email, req.body.password);
-    setTokenCookies(res, tokens);
+        logger.log({
+            timestamp: new Date().toISOString(),
+            level: LogLevel.INFO,
+            message: 'User registered successfully',
+            userId: user.id,
+            ipAddress: req.ip,
+            environment: config.env,
+            traceId: req.traceId,
+            email: body.email,
+        });
 
-    logger.log({
-        timestamp: new Date().toISOString(),
-        level: LogLevel.INFO,
-        message: 'User registered successfully',
-        userId: user.id,
-        ipAddress: req.ip,
-        environment: config.env,
-        traceId: req.traceId,
-        email: req.body.email,
-    });
-
-    res.status(HttpStatus.CREATED).json({ user });
+        res.status(HttpStatus.CREATED).json({ user });
+    } catch (error) {
+        if (error instanceof Error && error.name === 'ZodError') {
+            throw new InvalidParamError(error.message);
+        }
+        throw error;
+    }
 };
 
 export const login = async (req: Request, res: Response): Promise<void> => {
-    const { email } = req.body;
-    validateRequiredFields(req.body, ['email', 'password']);
+    try {
+        const validated = await loginSchema.parseAsync({
+            body: req.body,
+        });
+        const body = validated.body;
+        const tokens = await authService.login(body.email, body.password);
+        setTokenCookies(res, tokens);
 
-    const tokens = await authService.login(email, req.body.password);
-    setTokenCookies(res, tokens);
+        logger.log({
+            timestamp: new Date().toISOString(),
+            level: LogLevel.INFO,
+            message: 'User logged in successfully',
+            ipAddress: req.ip,
+            environment: config.env,
+            traceId: req.traceId,
+            email: body.email,
+        });
 
-    logger.log({
-        timestamp: new Date().toISOString(),
-        level: LogLevel.INFO,
-        message: 'User logged in successfully',
-        ipAddress: req.ip,
-        environment: config.env,
-        traceId: req.traceId,
-        email,
-    });
-
-    res.status(HttpStatus.OK).json({ message: 'Logged in successfully' });
+        res.status(HttpStatus.OK).json({ message: 'Logged in successfully' });
+    } catch (error) {
+        if (error instanceof Error && error.name === 'ZodError') {
+            throw new InvalidParamError(error.message);
+        }
+        throw error;
+    }
 };
 
 export const refresh = async (req: Request, res: Response): Promise<void> => {
-    const refreshToken = req.cookies.refreshToken;
+    try {
+        const validated = await refreshSchema.parseAsync({
+            cookies: req.cookies,
+        });
+        const refreshToken = validated.cookies.refreshToken;
 
-    if (!refreshToken) {
-        throw new UnauthorizedError('Refresh token missing');
+        const tokens = await authService.refresh(refreshToken);
+        setTokenCookies(res, tokens);
+
+        logger.log({
+            timestamp: new Date().toISOString(),
+            level: LogLevel.INFO,
+            message: 'Token refreshed successfully',
+            ipAddress: req.ip,
+            environment: config.env,
+            traceId: req.traceId,
+        });
+
+        res.status(HttpStatus.OK).json({ message: 'Token refreshed' });
+    } catch (error) {
+        if (error instanceof Error && error.name === 'ZodError') {
+            throw new UnauthorizedError('Refresh token missing or invalid');
+        }
+        throw error;
     }
-
-    const tokens = await authService.refresh(refreshToken);
-    setTokenCookies(res, tokens);
-
-    logger.log({
-        timestamp: new Date().toISOString(),
-        level: LogLevel.INFO,
-        message: 'Token refreshed successfully',
-        ipAddress: req.ip,
-        environment: config.env,
-        traceId: req.traceId,
-    });
-
-    res.status(HttpStatus.OK).json({ message: 'Token refreshed' });
 };
 
 export const logout = async (req: Request, res: Response): Promise<void> => {

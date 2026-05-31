@@ -48,11 +48,13 @@ describe('Asset Controller', () => {
     });
 
     describe('getAssetsByProject', () => {
+        const validProjectId = '123e4567-e89b-12d3-a456-426614174003';
+
         it('should return assets if authorized', async () => {
-            req.params = { projectId: 'p1' };
-            req.query = { projectId: 'p1' };
+            req.params = { projectId: validProjectId };
+            req.query = { projectId: validProjectId };
             
-            const mockProject = { id: 'p1', userId: 'user-1' };
+            const mockProject = { id: validProjectId, userId: 'user-1' };
             vi.mocked(projectService.getProjectByIdAndUserId).mockResolvedValue(mockProject as any);
             
             const mockAssets = [{ id: 'a1' }];
@@ -60,14 +62,14 @@ describe('Asset Controller', () => {
 
             await assetController.getAssetsByProject(req, res);
 
-            expect(assetService.getAssetsByProjectId).toHaveBeenCalledWith('p1');
+            expect(assetService.getAssetsByProjectId).toHaveBeenCalledWith(validProjectId);
             expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
             expect(res.json).toHaveBeenCalledWith(mockAssets);
         });
 
         it('should throw NotFoundError if unauthorized', async () => {
-            req.params = { projectId: 'p1' };
-            req.query = { projectId: 'p1' };
+            req.params = { projectId: validProjectId };
+            req.query = { projectId: validProjectId };
             vi.mocked(projectService.getProjectByIdAndUserId).mockResolvedValue(undefined);
 
             await expect(assetController.getAssetsByProject(req, res))
@@ -76,11 +78,14 @@ describe('Asset Controller', () => {
     });
 
     describe('manipulateAsset', () => {
+        const validAssetId = '123e4567-e89b-12d3-a456-426614174001';
+        const validVersionId = '123e4567-e89b-12d3-a456-426614174002';
+
         it('should parse options correctly and call service if authorized', async () => {
-            req.params = { assetId: 'a1', versionId: 'v1' };
+            req.params = { assetId: validAssetId, versionId: validVersionId };
             req.body = { width: '100', height: 200, fit: 'contain', format: 'webp' };
             
-            const mockAsset = { id: 'a1', userId: 'user-1' };
+            const mockAsset = { id: validAssetId, userId: 'user-1' };
             vi.mocked(assetService.getAssetByIdAndUserId).mockResolvedValue(mockAsset as any);
             
             const mockVersion = { id: 'v2' };
@@ -88,7 +93,7 @@ describe('Asset Controller', () => {
 
             await assetController.manipulateAsset(req, res);
 
-            expect(assetService.manipulateAsset).toHaveBeenCalledWith('a1', 'v1', {
+            expect(assetService.manipulateAsset).toHaveBeenCalledWith(validAssetId, validVersionId, {
                 width: 100,
                 height: 200,
                 fit: 'contain',
@@ -100,7 +105,7 @@ describe('Asset Controller', () => {
         });
 
         it('should throw NotFoundError if unauthorized', async () => {
-            req.params = { assetId: 'a1', versionId: 'v1' };
+            req.params = { assetId: validAssetId, versionId: validVersionId };
             vi.mocked(assetService.getAssetByIdAndUserId).mockResolvedValue(undefined);
 
             await expect(assetController.manipulateAsset(req, res))
@@ -108,9 +113,9 @@ describe('Asset Controller', () => {
         });
 
         it('should throw InvalidParamError if width is not a number', async () => {
-            req.params = { assetId: 'a1', versionId: 'v1' };
+            req.params = { assetId: validAssetId, versionId: validVersionId };
             req.body = { width: 'invalid' };
-            vi.mocked(assetService.getAssetByIdAndUserId).mockResolvedValue({ id: 'a1' } as any);
+            vi.mocked(assetService.getAssetByIdAndUserId).mockResolvedValue({ id: validAssetId } as any);
 
             await expect(assetController.manipulateAsset(req, res))
                 .rejects.toThrow(InvalidParamError);

@@ -58,20 +58,22 @@ describe('Project Controller', () => {
     });
 
     describe('getProject', () => {
+        const validId = '123e4567-e89b-12d3-a456-426614174001';
+
         it('should return project if authorized', async () => {
-            req.params = { id: 'p1' };
-            const mockProject = { id: 'p1', name: 'Test Project', userId: 'user-1' };
+            req.params = { id: validId };
+            const mockProject = { id: validId, name: 'Test Project', userId: 'user-1' };
             vi.mocked(projectService.getProjectByIdAndUserId).mockResolvedValue(mockProject);
 
             await projectController.getProject(req, res);
 
-            expect(projectService.getProjectByIdAndUserId).toHaveBeenCalledWith('p1', 'user-1');
+            expect(projectService.getProjectByIdAndUserId).toHaveBeenCalledWith(validId, 'user-1');
             expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
             expect(res.json).toHaveBeenCalledWith(mockProject);
         });
 
         it('should throw NotFoundError if unauthorized', async () => {
-            req.params = { id: 'p1' };
+            req.params = { id: validId };
             vi.mocked(projectService.getProjectByIdAndUserId).mockResolvedValue(undefined);
 
             await expect(projectController.getProject(req, res))
@@ -80,8 +82,10 @@ describe('Project Controller', () => {
     });
 
     describe('exportProject', () => {
+        const validId = '123e4567-e89b-12d3-a456-426614174001';
+
         it('should set headers, pipe archive, and log start', async () => {
-            req.params = { id: 'p1' };
+            req.params = { id: validId };
             const mockArchive = {
                 pipe: vi.fn(),
                 on: vi.fn(),
@@ -93,16 +97,16 @@ describe('Project Controller', () => {
 
             await projectController.exportProject(req, res);
 
-            expect(projectService.exportProject).toHaveBeenCalledWith('p1', 'user-1');
+            expect(projectService.exportProject).toHaveBeenCalledWith(validId, 'user-1');
             expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'application/zip');
             expect(mockArchive.pipe).toHaveBeenCalledWith(res);
             expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
-                message: 'Project export started: p1',
+                message: `Project export started: ${validId}`,
             }));
         });
 
         it('should throw error when export service fails', async () => {
-            req.params = { id: 'p1' };
+            req.params = { id: validId };
             vi.mocked(projectService.exportProject).mockRejectedValue(new Error('Project not found'));
 
             await expect(projectController.exportProject(req, res))

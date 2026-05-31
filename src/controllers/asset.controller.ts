@@ -1,173 +1,193 @@
 import { Request, Response } from 'express';
 import * as assetService from '../services/asset.service.js';
 import * as projectService from '../services/project.service.js';
-import { HttpStatus, AssetFit } from '../constants/constants.js';
+import { HttpStatus } from '../constants/constants.js';
 import { NotFoundError, InvalidParamError } from '../utils/errors.js';
-import { getRequiredParam, validateRequiredFields } from '../utils/params.js';
 import { logger } from '../services/logger/logger.factory.js';
 import { LogLevel } from '../services/logger/index.js';
 import { config } from '../config/config.js';
+import { manipulateAssetSchema, uploadAssetSchema, getAssetSchema, getAssetsByProjectSchema, getAssetVersionsSchema, deleteAssetSchema } from '../schemas/asset.schema.js';
 
 export const uploadAsset = async (req: Request, res: Response): Promise<void> => {
-    validateRequiredFields(req.body, ['projectId', 'name']);
-    const { projectId, name } = req.body;
-    const file = req.file;
-    const userId = req.user!.userId;
+    try {
+        const validated = await uploadAssetSchema.parseAsync({
+            body: req.body,
+        });
+        const { projectId, name } = validated.body;
+        const file = req.file;
+        const userId = req.user!.userId;
 
-    if (!file) throw new InvalidParamError('Required field "file" is missing from request.');
+        if (!file) throw new InvalidParamError('Required field "file" is missing from request.');
 
-    // Authorize: Check if project belongs to user
-    const project = await projectService.getProjectByIdAndUserId(projectId, userId);
-    
-    if (!project) throw new NotFoundError('Project not found or unauthorized');
+        // Authorize: Check if project belongs to user
+        const project = await projectService.getProjectByIdAndUserId(projectId, userId);
 
-    const asset = await assetService.uploadAsset(
-        userId,
-        projectId as string,
-        name as string,
-        file.buffer
-    );
+        if (!project) throw new NotFoundError('Project not found or unauthorized');
 
-    logger.log({
-        timestamp: new Date().toISOString(),
-        level: LogLevel.INFO,
-        message: `Asset uploaded: ${asset.id} in project ${projectId}`,
-        userId,
-        traceId: req.traceId,
-        environment: config.env,
-    });
+        const asset = await assetService.uploadAsset(
+            userId,
+            projectId,
+            name,
+            file.buffer
+        );
 
-    res.status(HttpStatus.CREATED).json(asset);
+        logger.log({
+            timestamp: new Date().toISOString(),
+            level: LogLevel.INFO,
+            message: `Asset uploaded: ${asset.id} in project ${projectId}`,
+            userId,
+            traceId: req.traceId,
+            environment: config.env,
+        });
+
+        res.status(HttpStatus.CREATED).json(asset);
+    } catch (error) {
+        if (error instanceof Error && error.name === 'ZodError') {
+            throw new InvalidParamError(error.message);
+        }
+        throw error;
+    }
 };
 
 export const manipulateAsset = async (req: Request, res: Response): Promise<void> => {
-    const assetId = getRequiredParam(req, 'assetId');
-    const versionId = getRequiredParam(req, 'versionId');
-    const options = parseManipulationOptions(req.body);
-    const userId = req.user!.userId;
+    try {
+        const validated = await manipulateAssetSchema.parseAsync({
+            params: req.params,
+            body: req.body,
+        });
 
-    // Authorize: Check if asset belongs to user
-    const asset = await assetService.getAssetByIdAndUserId(assetId, userId);
-    
-    if (!asset) throw new NotFoundError('Asset not found or unauthorized');
+        const { assetId, versionId } = validated.params;
+        const options = validated.body;
+        const userId = req.user!.userId;
 
-    const newVersion = await assetService.manipulateAsset(assetId, versionId, options);
+        // Authorize: Check if asset belongs to user
+        const asset = await assetService.getAssetByIdAndUserId(assetId, userId);
 
-    logger.log({
-        timestamp: new Date().toISOString(),
-        level: LogLevel.INFO,
-        message: `Asset manipulated: ${assetId}, new version: ${newVersion.id}`,
-        userId,
-        traceId: req.traceId,
-        environment: config.env,
-    });
+        if (!asset) throw new NotFoundError('Asset not found or unauthorized');
 
-    res.status(HttpStatus.CREATED).json(newVersion);
+        const newVersion = await assetService.manipulateAsset(assetId, versionId, options);
+
+        logger.log({
+            timestamp: new Date().toISOString(),
+            level: LogLevel.INFO,
+            message: `Asset manipulated: ${assetId}, new version: ${newVersion.id}`,
+            userId,
+            traceId: req.traceId,
+            environment: config.env,
+        });
+
+        res.status(HttpStatus.CREATED).json(newVersion);
+    } catch (error) {
+        if (error instanceof Error && error.name === 'ZodError') {
+            throw new InvalidParamError(error.message);
+        }
+        throw error;
+    }
 };
 
 export const getAsset = async (req: Request, res: Response): Promise<void> => {
-    const id = getRequiredParam(req, 'id');
-    const userId = req.user!.userId;
+    try {
+        const validated = await getAssetSchema.parseAsync({
+            params: req.params,
+        });
+        const { id } = validated.params;
+        const userId = req.user!.userId;
 
-    // Authorize: Check if asset belongs to user
-    const asset = await assetService.getAssetByIdAndUserId(id, userId);
+        // Authorize: Check if asset belongs to user
+        const asset = await assetService.getAssetByIdAndUserId(id, userId);
 
-    if (!asset) {
-        throw new NotFoundError(`Asset with id ${id} not found.`);
+        if (!asset) {
+            throw new NotFoundError(`Asset with id ${id} not found.`);
+        }
+
+        const latestVersion = await assetService.getLatestVersion(id);
+
+        res.status(HttpStatus.OK).json({ ...asset, latestVersion });
+    } catch (error) {
+        if (error instanceof Error && error.name === 'ZodError') {
+            throw new InvalidParamError(error.message);
+        }
+        throw error;
     }
-
-    const latestVersion = await assetService.getLatestVersion(id);
-
-    res.status(HttpStatus.OK).json({ ...asset, latestVersion });
 };
 
 export const getAssetsByProject = async (req: Request, res: Response): Promise<void> => {
-    const projectId = getRequiredParam(req, 'projectId');
-    const userId = req.user!.userId;
+    try {
+        const validated = await getAssetsByProjectSchema.parseAsync({
+            params: req.params,
+        });
+        const { projectId } = validated.params;
+        const userId = req.user!.userId;
 
-    // Authorize: Check if project belongs to user
-    const project = await projectService.getProjectByIdAndUserId(projectId, userId);
-    
-    if (!project) throw new NotFoundError('Project not found or unauthorized');
+        // Authorize: Check if project belongs to user
+        const project = await projectService.getProjectByIdAndUserId(projectId, userId);
 
-    const assets = await assetService.getAssetsByProjectId(projectId);
+        if (!project) throw new NotFoundError('Project not found or unauthorized');
 
-    res.status(HttpStatus.OK).json(assets);
+        const assets = await assetService.getAssetsByProjectId(projectId);
+
+        res.status(HttpStatus.OK).json(assets);
+    } catch (error) {
+        if (error instanceof Error && error.name === 'ZodError') {
+            throw new InvalidParamError(error.message);
+        }
+        throw error;
+    }
 };
 
 export const getAssetVersions = async (req: Request, res: Response): Promise<void> => {
-    const id = getRequiredParam(req, 'id');
-    const userId = req.user!.userId;
+    try {
+        const validated = await getAssetVersionsSchema.parseAsync({
+            params: req.params,
+        });
+        const { id } = validated.params;
+        const userId = req.user!.userId;
 
-    // Authorize: Check if asset belongs to user
-    const asset = await assetService.getAssetByIdAndUserId(id, userId);
-    
-    if (!asset) throw new NotFoundError(`Asset with id ${id} not found.`);
+        // Authorize: Check if asset belongs to user
+        const asset = await assetService.getAssetByIdAndUserId(id, userId);
 
-    const versions = await assetService.getAllVersions(id);
+        if (!asset) throw new NotFoundError(`Asset with id ${id} not found.`);
 
-    res.status(HttpStatus.OK).json(versions);
+        const versions = await assetService.getAllVersions(id);
+
+        res.status(HttpStatus.OK).json(versions);
+    } catch (error) {
+        if (error instanceof Error && error.name === 'ZodError') {
+            throw new InvalidParamError(error.message);
+        }
+        throw error;
+    }
 };
 
 export const deleteAsset = async (req: Request, res: Response): Promise<void> => {
-    const id = getRequiredParam(req, 'id');
-    const userId = req.user!.userId;
+    try {
+        const validated = await deleteAssetSchema.parseAsync({
+            params: req.params,
+        });
+        const { id } = validated.params;
+        const userId = req.user!.userId;
 
-    // Authorize: Check if asset belongs to user
-    const asset = await assetService.getAssetByIdAndUserId(id, userId);
-    
-    if (!asset) throw new NotFoundError(`Asset with id ${id} not found.`);
+        // Authorize: Check if asset belongs to user
+        const asset = await assetService.getAssetByIdAndUserId(id, userId);
 
-    await assetService.deleteAsset(id);
+        if (!asset) throw new NotFoundError(`Asset with id ${id} not found.`);
 
-    logger.log({
-        timestamp: new Date().toISOString(),
-        level: LogLevel.INFO,
-        message: `Asset deleted: ${id}`,
-        userId,
-        traceId: req.traceId,
-        environment: config.env,
-    });
+        await assetService.deleteAsset(id);
 
-    res.status(HttpStatus.NO_CONTENT).send();
-};
+        logger.log({
+            timestamp: new Date().toISOString(),
+            level: LogLevel.INFO,
+            message: `Asset deleted: ${id}`,
+            userId,
+            traceId: req.traceId,
+            environment: config.env,
+        });
 
-const parseManipulationOptions = (body: any): assetService.ManipulationOptions => {
-    const options: assetService.ManipulationOptions = {};
-
-    if (body.width !== undefined) {
-        const width = parseInt(body.width, 10);
-
-        if (isNaN(width)) {
-            throw new InvalidParamError('Field "width" must be a number.');
+        res.status(HttpStatus.NO_CONTENT).send();
+    } catch (error) {
+        if (error instanceof Error && error.name === 'ZodError') {
+            throw new InvalidParamError(error.message);
         }
-
-        options.width = width;
+        throw error;
     }
-
-    if (body.height !== undefined) {
-        const height = parseInt(body.height, 10);
-
-        if (isNaN(height)) {
-            throw new InvalidParamError('Field "height" must be a number.');
-        }
-
-        options.height = height;
-    }
-
-    if (body.fit !== undefined) {
-        const validFits = Object.values(AssetFit);
-
-        if (!validFits.includes(body.fit as AssetFit)) {
-            throw new InvalidParamError(`Field "fit" must be one of: ${validFits.join(', ')}.`);
-        }
-
-        options.fit = body.fit as AssetFit;
-    }
-
-    if (body.format !== undefined) {
-        options.format = body.format as assetService.ManipulationOptions['format'];
-    }
-
-    return options;
 };
