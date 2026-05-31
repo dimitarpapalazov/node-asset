@@ -1,5 +1,5 @@
 todo:
-add error handler
+add validation
 add download key logic
 add rabbitmq
 add worker for export
@@ -33,3 +33,4 @@ add export project logic
 delete assets when deleting project
 add readme
 add logging
+add error handler

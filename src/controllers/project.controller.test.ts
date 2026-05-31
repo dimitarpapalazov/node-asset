@@ -3,6 +3,7 @@ import * as projectController from './project.controller.js';
 import * as projectService from '../services/project.service.js';
 import { HttpStatus } from '../constants/constants.js';
 import { logger } from '../services/logger/logger.factory.js';
+import { NotFoundError } from '../utils/errors.js';
 
 vi.mock('../services/project.service.js', () => ({
     createProject: vi.fn(),
@@ -69,17 +70,12 @@ describe('Project Controller', () => {
             expect(res.json).toHaveBeenCalledWith(mockProject);
         });
 
-        it('should return 404 and log warning if unauthorized', async () => {
+        it('should throw NotFoundError if unauthorized', async () => {
             req.params = { id: 'p1' };
             vi.mocked(projectService.getProjectByIdAndUserId).mockResolvedValue(undefined);
 
-            await projectController.getProject(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(HttpStatus.NOT_FOUND);
-            expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
-                message: 'Project not found or unauthorized: p1',
-                level: 'WARN',
-            }));
+            await expect(projectController.getProject(req, res))
+                .rejects.toThrow(NotFoundError);
         });
     });
 
@@ -105,17 +101,12 @@ describe('Project Controller', () => {
             }));
         });
 
-        it('should handle errors and log them', async () => {
+        it('should throw error when export service fails', async () => {
             req.params = { id: 'p1' };
             vi.mocked(projectService.exportProject).mockRejectedValue(new Error('Project not found'));
 
-            await projectController.exportProject(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
-            expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
-                message: 'Error exporting project: Project not found',
-                level: 'ERROR',
-            }));
+            await expect(projectController.exportProject(req, res))
+                .rejects.toThrow('Project not found');
         });
     });
 });
