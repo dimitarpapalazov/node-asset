@@ -9,13 +9,18 @@ import {
     getAssetsByProjectSchema,
     getAssetVersionsSchema,
     manipulateAssetSchema,
-    uploadAssetSchema
+    uploadAssetSchema,
+    generateAssetKeySchema,
+    getPublicAssetSchema
 } from '../schemas/asset.schema.js';
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-// All asset routes require authentication
+// Public route - No authentication required
+router.get('/public/:key', validate(getPublicAssetSchema), assetController.getPublicAsset);
+
+// All subsequent asset routes require authentication
 router.use(authenticate);
 
 // Asset management routes
@@ -24,6 +29,7 @@ router.get('/project/:projectId', validate(getAssetsByProjectSchema), assetContr
 router.get('/:id', validate(getAssetSchema), assetController.getAsset);
 router.get('/:id/versions', validate(getAssetVersionsSchema), assetController.getAssetVersions);
 router.post('/:assetId/versions/:versionId/manipulate', validate(manipulateAssetSchema), assetController.manipulateAsset);
+router.post('/:id/keys', validate(generateAssetKeySchema), assetController.generateAssetKey);
 router.delete('/:id', validate(deleteAssetSchema), assetController.deleteAsset);
 
 export default router;

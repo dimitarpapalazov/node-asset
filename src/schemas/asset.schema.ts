@@ -37,5 +37,21 @@ export const manipulateAssetSchema = z.object({
 
 export const deleteAssetSchema = getAssetSchema;
 
+export const generateAssetKeySchema = z.object({
+    params: z.object({
+        id: z.string().uuid('Invalid asset ID format'),
+    }),
+    body: z.object({
+        expiresInSeconds: z.number().int().positive().optional(),
+    }),
+});
+
+export const getPublicAssetSchema = z.object({
+    params: z.object({
+        key: z.string().min(1, 'Key is required'),
+    }),
+});
+
 export type UploadAssetInput = z.infer<typeof uploadAssetSchema>['body'];
 export type ManipulateAssetInput = z.infer<typeof manipulateAssetSchema>['body'];
+export type GenerateAssetKeyInput = z.infer<typeof generateAssetKeySchema>['body'];

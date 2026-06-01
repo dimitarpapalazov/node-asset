@@ -21,6 +21,8 @@ vi.mock('../services/asset.service.js', () => ({
     getLatestVersion: vi.fn(),
     getAllVersions: vi.fn(),
     deleteAsset: vi.fn(),
+    generateAssetKey: vi.fn(),
+    getLatestAssetVersionByKey: vi.fn(),
 }));
 
 vi.mock('../services/project.service.js', () => ({
@@ -44,6 +46,7 @@ describe('Asset Controller', () => {
             status: vi.fn().mockReturnThis(),
             json: vi.fn().mockReturnThis(),
             send: vi.fn().mockReturnThis(),
+            setHeader: vi.fn().mockReturnThis(),
         };
     });
 
@@ -118,6 +121,57 @@ describe('Asset Controller', () => {
             vi.mocked(assetService.getAssetByIdAndUserId).mockResolvedValue({ id: validAssetId } as any);
 
             await expect(assetController.manipulateAsset(req, res))
+                .rejects.toThrow(InvalidParamError);
+        });
+    });
+
+    describe('generateAssetKey', () => {
+        const validAssetId = '123e4567-e89b-12d3-a456-426614174001';
+
+        it('should generate a key if authorized', async () => {
+            req.params = { id: validAssetId };
+            req.body = { expiresInSeconds: 3600 };
+            
+            const mockAsset = { id: validAssetId, userId: 'user-1' };
+            vi.mocked(assetService.getAssetByIdAndUserId).mockResolvedValue(mockAsset as any);
+            
+            const mockKey = { id: 'k1', key: 'key-123' };
+            vi.mocked(assetService.generateAssetKey).mockResolvedValue(mockKey as any);
+
+            await assetController.generateAssetKey(req, res);
+
+            expect(assetService.generateAssetKey).toHaveBeenCalledWith(validAssetId, 3600);
+            expect(res.status).toHaveBeenCalledWith(HttpStatus.CREATED);
+            expect(res.json).toHaveBeenCalledWith(mockKey);
+        });
+
+        it('should throw NotFoundError if unauthorized', async () => {
+            req.params = { id: validAssetId };
+            vi.mocked(assetService.getAssetByIdAndUserId).mockResolvedValue(undefined);
+
+            await expect(assetController.generateAssetKey(req, res))
+                .rejects.toThrow(NotFoundError);
+        });
+    });
+
+    describe('getPublicAsset', () => {
+        it('should return image buffer for a valid key', async () => {
+            req.params = { key: 'valid-key' };
+            
+            const mockData = { buffer: Buffer.from('image-data'), format: 'png' };
+            vi.mocked(assetService.getLatestAssetVersionByKey).mockResolvedValue(mockData);
+
+            await assetController.getPublicAsset(req, res);
+
+            expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'image/png');
+            expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
+            expect(res.send).toHaveBeenCalledWith(mockData.buffer);
+        });
+
+        it('should throw InvalidParamError if key is empty', async () => {
+            req.params = { key: '' };
+
+            await expect(assetController.getPublicAsset(req, res))
                 .rejects.toThrow(InvalidParamError);
         });
     });

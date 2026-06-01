@@ -5,6 +5,8 @@ import { storageService } from './storage.service.js';
 import sharp from 'sharp';
 import { logger } from './logger/logger.factory.js';
 import { LogLevel } from './logger/index.js';
+import { NotFoundError } from '../utils/errors.js';
+import { AssetFit } from '../constants/constants.js';
 
 // Mock dependencies
 vi.mock('../db/index.js', () => ({
@@ -110,7 +112,7 @@ describe('Asset Service', () => {
                 })),
             });
 
-            const options: assetService.ManipulationOptions = { width: 50, fit: 'cover' };
+            const options: assetService.ManipulationOptions = { width: 50, fit: AssetFit.COVER };
             const result = await assetService.manipulateAsset('a1', 'v1', options);
 
             expect(storageService.get).toHaveBeenCalledWith('h1');
@@ -263,6 +265,84 @@ describe('Asset Service', () => {
                 level: LogLevel.INFO,
                 message: expect.stringContaining('Asset record deleted from DB: asset-1'),
             }));
+        });
+    });
+
+    describe('generateAssetKey', () => {
+        it('should generate a permanent asset key when no expiration is provided', async () => {
+            const assetId = 'asset-1';
+            const keyData = { id: 'key-1', key: 'random-key', assetId, expiresAt: null };
+
+            (db.insert as any).mockReturnValue({
+                values: vi.fn(() => ({
+                    returning: vi.fn(() => [keyData]),
+                })),
+            });
+
+            const result = await assetService.generateAssetKey(assetId);
+
+            expect(result).toEqual(keyData);
+            expect(db.insert).toHaveBeenCalled();
+        });
+
+        it('should generate an expiring asset key when expiresInSeconds is provided', async () => {
+            const assetId = 'asset-1';
+            const expiresInSeconds = 3600;
+            
+            (db.insert as any).mockReturnValue({
+                values: vi.fn(() => ({
+                    returning: vi.fn(() => [{ id: 'key-1', assetId, expiresAt: new Date() }]),
+                })),
+            });
+
+            await assetService.generateAssetKey(assetId, expiresInSeconds);
+
+            expect(db.insert).toHaveBeenCalledWith(expect.anything());
+        });
+    });
+
+    describe('getLatestAssetVersionByKey', () => {
+        it('should return asset data for a valid key', async () => {
+            const key = 'valid-key';
+            const keyRecord = { id: 'k1', key, assetId: 'a1', expiresAt: null };
+            const latestVersion = { id: 'v1', assetId: 'a1', hash: 'h1', format: 'png' };
+
+            // 1. Mock key lookup
+            (db.select as any).mockReturnValueOnce({
+                from: vi.fn(() => ({
+                    where: vi.fn(() => [keyRecord]),
+                })),
+            });
+
+            // 2. Mock latest version lookup
+            (db.select as any).mockReturnValueOnce({
+                from: vi.fn(() => ({
+                    where: vi.fn(() => ({
+                        orderBy: vi.fn(() => ({
+                            limit: vi.fn(() => [latestVersion]),
+                        })),
+                    })),
+                })),
+            });
+
+            const result = await assetService.getLatestAssetVersionByKey(key);
+
+            expect(result).toEqual({
+                buffer: Buffer.from('fake-data'),
+                format: 'png',
+            });
+            expect(storageService.get).toHaveBeenCalledWith('h1');
+        });
+
+        it('should throw NotFoundError if key is not found or expired', async () => {
+            (db.select as any).mockReturnValue({
+                from: vi.fn(() => ({
+                    where: vi.fn(() => []),
+                })),
+            });
+
+            await expect(assetService.getLatestAssetVersionByKey('invalid-key'))
+                .rejects.toThrow(NotFoundError);
         });
     });
 });

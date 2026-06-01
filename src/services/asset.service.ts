@@ -1,12 +1,14 @@
 import { db } from '../db/index.js';
-import { assets, assetVersions } from '../db/schema.js';
-import { eq, and, desc } from 'drizzle-orm';
+import { assets, assetVersions, assetKeys } from '../db/schema.js';
+import { eq, and, desc, or, gt, isNull } from 'drizzle-orm';
 import { storageService } from './storage.service.js';
 import { AssetFit } from '../constants/constants.js';
 import sharp from 'sharp';
 import { logger } from './logger/logger.factory.js';
 import { LogLevel } from './logger/index.js';
 import { config } from '../config/config.js';
+import crypto from 'node:crypto';
+import { NotFoundError } from '../utils/errors.js';
 
 export interface ManipulationOptions {
     width?: number;
@@ -17,6 +19,7 @@ export interface ManipulationOptions {
 
 export type Asset = typeof assets.$inferSelect;
 export type AssetVersion = typeof assetVersions.$inferSelect;
+export type AssetKey = typeof assetKeys.$inferSelect;
 
 export const uploadAsset = async (userId: string, projectId: string, name: string, buffer: Buffer): Promise<Asset & { latestVersion: AssetVersion }> => {
     const metadata = await sharp(buffer).metadata();
@@ -172,4 +175,55 @@ export const deleteAsset = async (id: string): Promise<void> => {
         environment: config.env,
         traceId: 'system',
     });
+};
+
+export const generateAssetKey = async (assetId: string, expiresInSeconds?: number): Promise<AssetKey> => {
+    const key = crypto.randomBytes(32).toString('hex');
+    const expiresAt = expiresInSeconds ? new Date(Date.now() + expiresInSeconds * 1000) : null;
+
+    const [assetKey] = await db.insert(assetKeys)
+        .values({
+            key,
+            assetId,
+            expiresAt,
+        })
+        .returning();
+
+    logger.log({
+        timestamp: new Date().toISOString(),
+        level: LogLevel.INFO,
+        message: `Asset key generated: ${assetKey.id} for asset ${assetId}`,
+        environment: config.env,
+        traceId: 'system',
+    });
+
+    return assetKey;
+};
+
+export const getLatestAssetVersionByKey = async (key: string): Promise<{ buffer: Buffer; format: string }> => {
+    const now = new Date();
+
+    const [keyRecord] = await db.select()
+        .from(assetKeys)
+        .where(and(
+            eq(assetKeys.key, key),
+            or(isNull(assetKeys.expiresAt), gt(assetKeys.expiresAt, now))
+        ));
+
+    if (!keyRecord) {
+        throw new NotFoundError('Invalid or expired asset key');
+    }
+
+    const latestVersion = await getLatestVersion(keyRecord.assetId);
+
+    if (!latestVersion) {
+        throw new NotFoundError('No versions found for this asset');
+    }
+
+    const buffer = await storageService.get(latestVersion.hash);
+
+    return {
+        buffer,
+        format: latestVersion.format,
+    };
 };

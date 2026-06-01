@@ -37,6 +37,18 @@ export const assets = pgTable('assets', {
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+export const assetKeys = pgTable('asset_keys', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    key: varchar('key', { length: 255 }).notNull().unique(),
+    
+    assetId: uuid('asset_id').references(() => assets.id, { onDelete: 'cascade' }).notNull(),
+    
+    // If null, the key never expires
+    expiresAt: timestamp('expires_at'),
+    
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
 export const assetVersions = pgTable('asset_versions', {
     id: uuid('id').primaryKey().defaultRandom(),
     assetId: uuid('asset_id').references(() => assets.id, { onDelete: 'cascade' }).notNull(),
