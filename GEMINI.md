@@ -18,12 +18,18 @@ This is a backend API project built with TypeScript and Express.js. The goal is 
     - `src/db`: Database schema (Drizzle) and connection setup.
     - `src/routes`: API endpoint definitions.
     - `src/utils`: Reusable helper functions (e.g., environment, shutdown).
+- **App vs Server Separation:** Separate the Express application instance (`src/app.ts`) from the server listener (`src/index.ts`). This ensures that integration tests (using `supertest`) can bootstrap the application without binding to a network port.
+- **Security:** 
+    - Use `helmet` middleware to set secure HTTP headers by default.
+    - Implement public asset retrieval via unique, short-lived expiring keys to protect storage internals.
+- **Validation:** Use **Zod** for schema validation. All request bodies, parameters, and queries must be validated using the `validate` middleware before reaching the controller.
+- **Error Handling:** Use the global `errorMiddleware` and the `ApiError` utility class for consistent error responses. Controllers should not use try-catch blocks for operational errors; instead, they should rely on the middleware to catch thrown `ApiError` instances.
 - **Storage Lifecycle:** Ensure all file deletion operations trigger necessary storage cleanup (Content-Addressable Storage) to prevent orphaned files.
 - **Environment Management:** Always use `envOrThrow` from `src/utils/env.ts` for environment variable access to ensure validation at startup.
 - **Testing (TDD):** 
     - Mandate a Test-Driven Development (TDD) approach for all new features and bug fixes.
     - Implement comprehensive unit tests wherever possible.
-    - Use **Vitest** for unit and integration testing.
+    - Use **Vitest** for unit testing and **supertest** for integration testing.
     - Test files must use the `.test.ts` extension and be placed alongside the code they test.
     - Prioritize high test coverage for Services and Utilities.
 - **Documentation:** Always update `README.md` to reflect changes in API surface area, features, or project structure as part of the implementation task.
@@ -36,8 +42,10 @@ This is a backend API project built with TypeScript and Express.js. The goal is 
 ## Technical Stack
 - Language: TypeScript
 - Framework: Express.js
+- Security: Helmet.js
+- Validation: Zod
 - Database: PostgreSQL (with Drizzle ORM)
 - Authentication: JSON Web Tokens (JWT) & Argon2
-- Testing: Vitest
+- Testing: Vitest & Supertest
 - Infrastructure: Docker
 - (Upcoming: RabbitMQ)
