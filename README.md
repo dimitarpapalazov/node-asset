@@ -7,6 +7,7 @@ A robust, scalable asset management system built with TypeScript and Express.js,
 The Node Asset Management API is a backend solution designed to manage organizational assets and projects efficiently. It leverages a modern technical stack to ensure performance, type safety, and maintainability. Key features include:
 
 - **Secure Authentication**: JWT-based access and refresh tokens with revocation support.
+- **Security Middleware**: Enhanced security headers powered by Helmet.js.
 - **Type-Safe Database Access**: Powered by Drizzle ORM and PostgreSQL.
 - **Layered Architecture**: Clear separation of concerns between controllers, services, and database layers.
 - **Comprehensive Testing**: Built with a Test-Driven Development (TDD) approach using Vitest.

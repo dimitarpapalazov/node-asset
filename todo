@@ -1,9 +1,12 @@
 todo:
+helmet
+rate limiting
+cors
 add rabbitmq
 add worker for export
 add worker for manipulation
-cache control?
-import project?
+import project
+swagger
 
 done:
 init git
