@@ -1,7 +1,4 @@
 todo:
-helmet
-rate limiting
-cors
 add rabbitmq
 add worker for export
 add worker for manipulation
@@ -37,3 +34,6 @@ add logging
 add error handler
 add validation
 add download key logic
+helmet
+rate limiting
+cors

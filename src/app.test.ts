@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import request from 'supertest';
 import app from './app.js';
 
-describe('Security Headers (Helmet)', () => {
+describe('Security Middleware', () => {
     it('should have security headers set by helmet', async () => {
         const response = await request(app).get('/health');
         
@@ -13,5 +13,20 @@ describe('Security Headers (Helmet)', () => {
         expect(response.headers['x-xss-protection']).toBe('0');
         expect(response.headers['content-security-policy']).toBeDefined();
         expect(response.headers['strict-transport-security']).toBeDefined();
+    });
+
+    it('should have CORS headers enabled', async () => {
+        const response = await request(app).get('/health');
+        
+        expect(response.headers['access-control-allow-origin']).toBe('*');
+    });
+
+    it('should have rate limit headers', async () => {
+        const response = await request(app).get('/health');
+        
+        // express-rate-limit headers
+        // By default it uses legacy headers (x-ratelimit-*)
+        expect(response.headers['x-ratelimit-limit']).toBeDefined();
+        expect(response.headers['x-ratelimit-remaining']).toBeDefined();
     });
 });

@@ -17,6 +17,9 @@ export default defineConfig({
             REFRESH_TOKEN_EXPIRY: '7d',
             UPLOADS_DIR: 'test-uploads',
             NODE_ENV: 'test',
+            RATE_LIMIT_WINDOW_MS: '900000',
+            RATE_LIMIT_MAX_REQUESTS: '100',
+            LOG_FILE_PATH: 'logs/test.log',
         },
     },
 });

@@ -48,6 +48,28 @@ export interface Config {
     storage: {
         uploadsDir: string;
     };
+
+    /**
+     * Rate limit configuration.
+     */
+    rateLimit: {
+        windowMs: number;
+        max: number;
+    };
+
+    /**
+     * CORS configuration.
+     */
+    cors: {
+        origin: string | string[];
+    };
+
+    /**
+     * Logger configuration.
+     */
+    logger: {
+        filePath: string;
+    };
 }
 
 const dbUser = envOrThrow('DB_USER');
@@ -79,5 +101,15 @@ export const config: Config = {
     },
     storage: {
         uploadsDir: envOrThrow('UPLOADS_DIR'),
+    },
+    rateLimit: {
+        windowMs: parseInt(envOrThrow('RATE_LIMIT_WINDOW_MS'), 10),
+        max: parseInt(envOrThrow('RATE_LIMIT_MAX_REQUESTS'), 10),
+    },
+    cors: {
+        origin: process.env.CORS_ORIGIN || '*',
+    },
+    logger: {
+        filePath: process.env.LOG_FILE_PATH || 'logs/app.log',
     },
 };
