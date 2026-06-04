@@ -1,5 +1,4 @@
 todo:
-add rabbitmq
 add worker for export
 add worker for manipulation
 import project
@@ -37,3 +36,4 @@ add download key logic
 helmet
 rate limiting
 cors
+add rabbitmq

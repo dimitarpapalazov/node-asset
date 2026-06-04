@@ -50,6 +50,13 @@ export interface Config {
     };
 
     /**
+     * RabbitMQ configuration.
+     */
+    rabbitmq: {
+        url: string;
+    };
+
+    /**
      * Rate limit configuration.
      */
     rateLimit: {
@@ -101,6 +108,9 @@ export const config: Config = {
     },
     storage: {
         uploadsDir: envOrThrow('UPLOADS_DIR'),
+    },
+    rabbitmq: {
+        url: envOrThrow('RABBITMQ_URL'),
     },
     rateLimit: {
         windowMs: parseInt(envOrThrow('RATE_LIMIT_WINDOW_MS'), 10),

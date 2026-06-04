@@ -16,6 +16,7 @@ export default defineConfig({
             ACCESS_TOKEN_EXPIRY: '15m',
             REFRESH_TOKEN_EXPIRY: '7d',
             UPLOADS_DIR: 'test-uploads',
+            RABBITMQ_URL: 'amqp://localhost',
             NODE_ENV: 'test',
             RATE_LIMIT_WINDOW_MS: '900000',
             RATE_LIMIT_MAX_REQUESTS: '100',
