@@ -5,8 +5,10 @@ import { ForbiddenError, NotFoundError } from '../utils/errors.js';
 import { logger } from '../services/logger/logger.factory.js';
 import { LogLevel } from '../services/logger/index.js';
 import { config } from '../config/config.js';
+import { ValidatedRequest } from '../types/validation.js';
+import { GetUserData, DeleteUserData } from '../schemas/user.schema.js';
 
-export const getUser = async (req: Request, res: Response): Promise<void> => {
+export const getUser = async (req: ValidatedRequest<GetUserData>, res: Response): Promise<void> => {
     const { id } = req.validData.params;
 
     const user = await userService.getUserById(id);
@@ -18,7 +20,7 @@ export const getUser = async (req: Request, res: Response): Promise<void> => {
     res.status(HttpStatus.OK).json(user);
 };
 
-export const deleteUser = async (req: Request, res: Response): Promise<void> => {
+export const deleteUser = async (req: ValidatedRequest<DeleteUserData>, res: Response): Promise<void> => {
     const { id } = req.validData.params;
     const authenticatedUserId = req.user?.userId;
 

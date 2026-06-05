@@ -6,8 +6,8 @@ import { UnauthorizedError } from '../utils/errors.js';
 import { config } from '../config/config.js';
 import { logger } from '../services/logger/logger.factory.js';
 import { LogLevel } from '../services/logger/index.js';
-import { loginSchema, registerSchema, refreshSchema } from '../schemas/auth.schema.js';
-import { InvalidParamError } from '../utils/errors.js';
+import { RegisterData, LoginData, RefreshData } from '../schemas/auth.schema.js';
+import { ValidatedRequest } from '../types/validation.js';
 
 const cookieOptions = {
     httpOnly: true,
@@ -39,7 +39,7 @@ const setTokenCookies = (res: Response, tokens: { accessToken: string, refreshTo
     });
 };
 
-export const register = async (req: Request, res: Response): Promise<void> => {
+export const register = async (req: ValidatedRequest<RegisterData>, res: Response): Promise<void> => {
     const { body } = req.validData;
     const user = await userService.createUser(body);
     const tokens = await authService.login(body.email, body.password);
@@ -59,7 +59,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     res.status(HttpStatus.CREATED).json({ user });
 };
 
-export const login = async (req: Request, res: Response): Promise<void> => {
+export const login = async (req: ValidatedRequest<LoginData>, res: Response): Promise<void> => {
     const { body } = req.validData;
     const tokens = await authService.login(body.email, body.password);
     setTokenCookies(res, tokens);
@@ -77,7 +77,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     res.status(HttpStatus.OK).json({ message: 'Logged in successfully' });
 };
 
-export const refresh = async (req: Request, res: Response): Promise<void> => {
+export const refresh = async (req: ValidatedRequest<RefreshData>, res: Response): Promise<void> => {
     const { cookies } = req.validData;
     const refreshToken = cookies.refreshToken;
 

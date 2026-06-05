@@ -5,8 +5,16 @@ import { NotFoundError } from '../utils/errors.js';
 import { logger } from '../services/logger/logger.factory.js';
 import { LogLevel } from '../services/logger/index.js';
 import { config } from '../config/config.js';
+import { ValidatedRequest } from '../types/validation.js';
+import {
+    CreateProjectData,
+    GetProjectData,
+    UpdateProjectData,
+    DeleteProjectData,
+    ExportProjectData
+} from '../schemas/project.schema.js';
 
-export const createProject = async (req: Request, res: Response): Promise<void> => {
+export const createProject = async (req: ValidatedRequest<CreateProjectData>, res: Response): Promise<void> => {
     const { name } = req.validData.body;
     const userId = req.user!.userId;
 
@@ -30,7 +38,7 @@ export const getUserProjects = async (req: Request, res: Response): Promise<void
     res.status(HttpStatus.OK).json(projects);
 };
 
-export const getProject = async (req: Request, res: Response): Promise<void> => {
+export const getProject = async (req: ValidatedRequest<GetProjectData>, res: Response): Promise<void> => {
     const { id } = req.validData.params;
     const userId = req.user!.userId;
     const project = await projectService.getProjectByIdAndUserId(id, userId);
@@ -42,7 +50,7 @@ export const getProject = async (req: Request, res: Response): Promise<void> => 
     res.status(HttpStatus.OK).json(project);
 };
 
-export const updateProject = async (req: Request, res: Response): Promise<void> => {
+export const updateProject = async (req: ValidatedRequest<UpdateProjectData>, res: Response): Promise<void> => {
     const { id } = req.validData.params;
     const { name } = req.validData.body;
     const userId = req.user!.userId;
@@ -65,7 +73,7 @@ export const updateProject = async (req: Request, res: Response): Promise<void> 
     res.status(HttpStatus.OK).json(project);
 };
 
-export const deleteProject = async (req: Request, res: Response): Promise<void> => {
+export const deleteProject = async (req: ValidatedRequest<DeleteProjectData>, res: Response): Promise<void> => {
     const { id } = req.validData.params;
     const userId = req.user!.userId;
     await projectService.deleteProject(id, userId);
@@ -82,7 +90,7 @@ export const deleteProject = async (req: Request, res: Response): Promise<void> 
     res.status(HttpStatus.NO_CONTENT).send();
 };
 
-export const exportProject = async (req: Request, res: Response): Promise<void> => {
+export const exportProject = async (req: ValidatedRequest<ExportProjectData>, res: Response): Promise<void> => {
     const { id } = req.validData.params;
     const userId = req.user!.userId;
     const { archive, projectName } = await projectService.exportProject(id, userId);

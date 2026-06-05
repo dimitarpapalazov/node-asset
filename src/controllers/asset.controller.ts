@@ -6,8 +6,19 @@ import { NotFoundError, InvalidParamError } from '../utils/errors.js';
 import { logger } from '../services/logger/logger.factory.js';
 import { LogLevel } from '../services/logger/index.js';
 import { config } from '../config/config.js';
+import { ValidatedRequest } from '../types/validation.js';
+import {
+    UploadAssetData,
+    ManipulateAssetData,
+    GetAssetData,
+    GetAssetsByProjectData,
+    GetAssetVersionsData,
+    DeleteAssetData,
+    GenerateAssetKeyData,
+    GetPublicAssetData
+} from '../schemas/asset.schema.js';
 
-export const uploadAsset = async (req: Request, res: Response): Promise<void> => {
+export const uploadAsset = async (req: ValidatedRequest<UploadAssetData>, res: Response): Promise<void> => {
     const { projectId, name } = req.validData.body;
     const file = req.file;
     const userId = req.user!.userId;
@@ -38,7 +49,7 @@ export const uploadAsset = async (req: Request, res: Response): Promise<void> =>
     res.status(HttpStatus.CREATED).json(asset);
 };
 
-export const manipulateAsset = async (req: Request, res: Response): Promise<void> => {
+export const manipulateAsset = async (req: ValidatedRequest<ManipulateAssetData>, res: Response): Promise<void> => {
     const { assetId, versionId } = req.validData.params;
     const options = req.validData.body;
     const userId = req.user!.userId;
@@ -62,7 +73,7 @@ export const manipulateAsset = async (req: Request, res: Response): Promise<void
     res.status(HttpStatus.CREATED).json(newVersion);
 };
 
-export const getAsset = async (req: Request, res: Response): Promise<void> => {
+export const getAsset = async (req: ValidatedRequest<GetAssetData>, res: Response): Promise<void> => {
     const { id } = req.validData.params;
     const userId = req.user!.userId;
 
@@ -78,7 +89,7 @@ export const getAsset = async (req: Request, res: Response): Promise<void> => {
     res.status(HttpStatus.OK).json({ ...asset, latestVersion });
 };
 
-export const getAssetsByProject = async (req: Request, res: Response): Promise<void> => {
+export const getAssetsByProject = async (req: ValidatedRequest<GetAssetsByProjectData>, res: Response): Promise<void> => {
     const { projectId } = req.validData.params;
     const userId = req.user!.userId;
 
@@ -92,7 +103,7 @@ export const getAssetsByProject = async (req: Request, res: Response): Promise<v
     res.status(HttpStatus.OK).json(assets);
 };
 
-export const getAssetVersions = async (req: Request, res: Response): Promise<void> => {
+export const getAssetVersions = async (req: ValidatedRequest<GetAssetVersionsData>, res: Response): Promise<void> => {
     const { id } = req.validData.params;
     const userId = req.user!.userId;
 
@@ -106,7 +117,7 @@ export const getAssetVersions = async (req: Request, res: Response): Promise<voi
     res.status(HttpStatus.OK).json(versions);
 };
 
-export const deleteAsset = async (req: Request, res: Response): Promise<void> => {
+export const deleteAsset = async (req: ValidatedRequest<DeleteAssetData>, res: Response): Promise<void> => {
     const { id } = req.validData.params;
     const userId = req.user!.userId;
 
@@ -129,7 +140,7 @@ export const deleteAsset = async (req: Request, res: Response): Promise<void> =>
     res.status(HttpStatus.NO_CONTENT).send();
 };
 
-export const generateAssetKey = async (req: Request, res: Response): Promise<void> => {
+export const generateAssetKey = async (req: ValidatedRequest<GenerateAssetKeyData>, res: Response): Promise<void> => {
     const { id } = req.validData.params;
     const { expiresInSeconds } = req.validData.body;
     const userId = req.user!.userId;
@@ -144,7 +155,7 @@ export const generateAssetKey = async (req: Request, res: Response): Promise<voi
     res.status(HttpStatus.CREATED).json(assetKey);
 };
 
-export const getPublicAsset = async (req: Request, res: Response): Promise<void> => {
+export const getPublicAsset = async (req: ValidatedRequest<GetPublicAssetData>, res: Response): Promise<void> => {
     const { key } = req.validData.params;
 
     const { buffer, format } = await assetService.getLatestAssetVersionByKey(key);

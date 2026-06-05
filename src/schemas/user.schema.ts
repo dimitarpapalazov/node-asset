@@ -6,4 +6,8 @@ export const getUserSchema = z.object({
     }),
 });
 
+export type GetUserData = z.infer<typeof getUserSchema>;
+
 export const deleteUserSchema = getUserSchema;
+
+export type DeleteUserData = z.infer<typeof deleteUserSchema>;

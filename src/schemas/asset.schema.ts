@@ -8,11 +8,15 @@ export const uploadAssetSchema = z.object({
     }),
 });
 
+export type UploadAssetData = z.infer<typeof uploadAssetSchema>;
+
 export const getAssetsByProjectSchema = z.object({
     params: z.object({
         projectId: z.string().uuid('Invalid project ID format'),
     }),
 });
+
+export type GetAssetsByProjectData = z.infer<typeof getAssetsByProjectSchema>;
 
 export const getAssetSchema = z.object({
     params: z.object({
@@ -20,7 +24,11 @@ export const getAssetSchema = z.object({
     }),
 });
 
+export type GetAssetData = z.infer<typeof getAssetSchema>;
+
 export const getAssetVersionsSchema = getAssetSchema;
+
+export type GetAssetVersionsData = z.infer<typeof getAssetVersionsSchema>;
 
 export const manipulateAssetSchema = z.object({
     params: z.object({
@@ -35,7 +43,11 @@ export const manipulateAssetSchema = z.object({
     }),
 });
 
+export type ManipulateAssetData = z.infer<typeof manipulateAssetSchema>;
+
 export const deleteAssetSchema = getAssetSchema;
+
+export type DeleteAssetData = z.infer<typeof deleteAssetSchema>;
 
 export const generateAssetKeySchema = z.object({
     params: z.object({
@@ -46,11 +58,15 @@ export const generateAssetKeySchema = z.object({
     }),
 });
 
+export type GenerateAssetKeyData = z.infer<typeof generateAssetKeySchema>;
+
 export const getPublicAssetSchema = z.object({
     params: z.object({
         key: z.string().min(1, 'Key is required'),
     }),
 });
+
+export type GetPublicAssetData = z.infer<typeof getPublicAssetSchema>;
 
 export type UploadAssetInput = z.infer<typeof uploadAssetSchema>['body'];
 export type ManipulateAssetInput = z.infer<typeof manipulateAssetSchema>['body'];
