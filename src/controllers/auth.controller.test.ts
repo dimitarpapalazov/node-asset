@@ -28,11 +28,18 @@ vi.mock('../config/config.js', () => ({
 }));
 
 describe('authController', () => {
-    let mockReq: Partial<Request>;
+    let mockReq: any;
     let mockRes: Partial<Response>;
 
     beforeEach(() => {
-        mockReq = { body: {}, cookies: {} };
+        mockReq = { 
+            body: {}, 
+            cookies: {},
+            validData: {
+                body: {},
+                cookies: {},
+            }
+        };
         mockRes = {
             status: vi.fn().mockReturnThis(),
             json: vi.fn(),
@@ -44,7 +51,7 @@ describe('authController', () => {
 
     describe('register', () => {
         it('should register a user and set cookies', async () => {
-            mockReq.body = { email: 'test@example.com', password: 'password' };
+            mockReq.validData.body = { email: 'test@example.com', password: 'password' };
             const user = { id: '1', email: 'test@example.com' };
             const tokens = { accessToken: 'at', refreshToken: 'rt' };
             vi.spyOn(userService, 'createUser').mockResolvedValue(user as any);
@@ -61,7 +68,7 @@ describe('authController', () => {
 
     describe('login', () => {
         it('should login a user and set cookies', async () => {
-            mockReq.body = { email: 'test@example.com', password: 'password' };
+            mockReq.validData.body = { email: 'test@example.com', password: 'password' };
             const tokens = { accessToken: 'at', refreshToken: 'rt' };
             vi.spyOn(authService, 'login').mockResolvedValue(tokens);
 
@@ -76,7 +83,7 @@ describe('authController', () => {
 
     describe('refresh', () => {
         it('should refresh tokens from cookie', async () => {
-            mockReq.cookies = { refreshToken: 'rt' };
+            mockReq.validData.cookies = { refreshToken: 'rt' };
             const tokens = { accessToken: 'at', refreshToken: 'new_rt' };
             vi.spyOn(authService, 'refresh').mockResolvedValue(tokens);
 

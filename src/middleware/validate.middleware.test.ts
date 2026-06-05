@@ -19,7 +19,7 @@ describe('validate middleware', () => {
         await middleware(req, res, next);
 
         expect(next).toHaveBeenCalledWith();
-        expect(req.body).toEqual({ name: 'Test' });
+        expect(req.validData.body).toEqual({ name: 'Test' });
     });
 
     it('should call next(error) if validation fails', async () => {
@@ -33,7 +33,7 @@ describe('validate middleware', () => {
         expect(next).toHaveBeenCalledWith(expect.any(Error));
     });
 
-    it('should handle nested paths and strip unknown fields', async () => {
+    it('should handle nested paths and strip unknown fields in validData', async () => {
         const middleware = validate(schema);
         const req = { body: { name: 'Test', unknown: 'field' } } as any;
         const res = {} as Response;
@@ -42,7 +42,9 @@ describe('validate middleware', () => {
         await middleware(req, res, next);
 
         expect(next).toHaveBeenCalledWith();
-        expect(req.body).toEqual({ name: 'Test' });
-        expect(req.body.unknown).toBeUndefined();
+        expect(req.validData.body).toEqual({ name: 'Test' });
+        expect(req.validData.body.unknown).toBeUndefined();
+        // Original body remains untouched
+        expect(req.body.unknown).toBe('field');
     });
 });

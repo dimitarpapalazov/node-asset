@@ -3,7 +3,7 @@ import { ZodObject } from 'zod';
 
 /**
  * Middleware to validate request data against a Zod schema.
- * Validates body, query, and params.
+ * Validates body, query, and params and stores them in req.validData.
  */
 export const validate = (schema: ZodObject<any>) => {
     return async (req: Request, res: Response, next: NextFunction) => {
@@ -13,13 +13,10 @@ export const validate = (schema: ZodObject<any>) => {
                 query: req.query,
                 params: req.params,
                 cookies: req.cookies,
-            }) as any;
+            });
 
-            // Update request with validated data to ensure type safety in controllers
-            req.body = validatedData.body ?? req.body;
-            req.query = validatedData.query ?? req.query;
-            req.params = validatedData.params ?? req.params;
-            req.cookies = validatedData.cookies ?? req.cookies;
+            // Store validated data in a custom field to avoid mutating standard Express properties
+            req.validData = validatedData;
 
             next();
         } catch (error) {

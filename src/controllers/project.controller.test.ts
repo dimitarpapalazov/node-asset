@@ -29,6 +29,10 @@ describe('Project Controller', () => {
         req = {
             params: {},
             body: {},
+            validData: {
+                params: {},
+                body: {},
+            },
             user: { userId: 'user-1' },
             traceId: 'test-trace-id',
         };
@@ -42,7 +46,7 @@ describe('Project Controller', () => {
 
     describe('createProject', () => {
         it('should create project and log success', async () => {
-            req.body = { name: 'New Project' };
+            req.validData.body = { name: 'New Project' };
             const mockProject = { id: 'p1', name: 'New Project', userId: 'user-1' };
             vi.mocked(projectService.createProject).mockResolvedValue(mockProject);
 
@@ -61,7 +65,7 @@ describe('Project Controller', () => {
         const validId = '123e4567-e89b-12d3-a456-426614174001';
 
         it('should return project if authorized', async () => {
-            req.params = { id: validId };
+            req.validData.params = { id: validId };
             const mockProject = { id: validId, name: 'Test Project', userId: 'user-1' };
             vi.mocked(projectService.getProjectByIdAndUserId).mockResolvedValue(mockProject);
 
@@ -73,7 +77,7 @@ describe('Project Controller', () => {
         });
 
         it('should throw NotFoundError if unauthorized', async () => {
-            req.params = { id: validId };
+            req.validData.params = { id: validId };
             vi.mocked(projectService.getProjectByIdAndUserId).mockResolvedValue(undefined);
 
             await expect(projectController.getProject(req, res))
@@ -85,7 +89,7 @@ describe('Project Controller', () => {
         const validId = '123e4567-e89b-12d3-a456-426614174001';
 
         it('should set headers, pipe archive, and log start', async () => {
-            req.params = { id: validId };
+            req.validData.params = { id: validId };
             const mockArchive = {
                 pipe: vi.fn(),
                 on: vi.fn(),
@@ -106,7 +110,7 @@ describe('Project Controller', () => {
         });
 
         it('should throw error when export service fails', async () => {
-            req.params = { id: validId };
+            req.validData.params = { id: validId };
             vi.mocked(projectService.exportProject).mockRejectedValue(new Error('Project not found'));
 
             await expect(projectController.exportProject(req, res))

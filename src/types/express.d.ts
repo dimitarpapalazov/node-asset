@@ -7,6 +7,7 @@ declare global {
                 userId: string;
             };
             traceId: string;
+            validData: any;
         }
     }
 }

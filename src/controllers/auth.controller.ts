@@ -40,89 +40,60 @@ const setTokenCookies = (res: Response, tokens: { accessToken: string, refreshTo
 };
 
 export const register = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const validated = await registerSchema.parseAsync({
-            body: req.body,
-        });
-        const body = validated.body;
-        const user = await userService.createUser(body);
-        const tokens = await authService.login(body.email, body.password);
-        setTokenCookies(res, tokens);
+    const { body } = req.validData;
+    const user = await userService.createUser(body);
+    const tokens = await authService.login(body.email, body.password);
+    setTokenCookies(res, tokens);
 
-        logger.log({
-            timestamp: new Date().toISOString(),
-            level: LogLevel.INFO,
-            message: 'User registered successfully',
-            userId: user.id,
-            ipAddress: req.ip,
-            environment: config.env,
-            traceId: req.traceId,
-            email: body.email,
-        });
+    logger.log({
+        timestamp: new Date().toISOString(),
+        level: LogLevel.INFO,
+        message: 'User registered successfully',
+        userId: user.id,
+        ipAddress: req.ip,
+        environment: config.env,
+        traceId: req.traceId,
+        email: body.email,
+    });
 
-        res.status(HttpStatus.CREATED).json({ user });
-    } catch (error) {
-        if (error instanceof Error && error.name === 'ZodError') {
-            throw new InvalidParamError(error.message);
-        }
-        throw error;
-    }
+    res.status(HttpStatus.CREATED).json({ user });
 };
 
 export const login = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const validated = await loginSchema.parseAsync({
-            body: req.body,
-        });
-        const body = validated.body;
-        const tokens = await authService.login(body.email, body.password);
-        setTokenCookies(res, tokens);
+    const { body } = req.validData;
+    const tokens = await authService.login(body.email, body.password);
+    setTokenCookies(res, tokens);
 
-        logger.log({
-            timestamp: new Date().toISOString(),
-            level: LogLevel.INFO,
-            message: 'User logged in successfully',
-            ipAddress: req.ip,
-            environment: config.env,
-            traceId: req.traceId,
-            email: body.email,
-        });
+    logger.log({
+        timestamp: new Date().toISOString(),
+        level: LogLevel.INFO,
+        message: 'User logged in successfully',
+        ipAddress: req.ip,
+        environment: config.env,
+        traceId: req.traceId,
+        email: body.email,
+    });
 
-        res.status(HttpStatus.OK).json({ message: 'Logged in successfully' });
-    } catch (error) {
-        if (error instanceof Error && error.name === 'ZodError') {
-            throw new InvalidParamError(error.message);
-        }
-        throw error;
-    }
+    res.status(HttpStatus.OK).json({ message: 'Logged in successfully' });
 };
 
 export const refresh = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const validated = await refreshSchema.parseAsync({
-            cookies: req.cookies,
-        });
-        const refreshToken = validated.cookies.refreshToken;
+    const { cookies } = req.validData;
+    const refreshToken = cookies.refreshToken;
 
-        const tokens = await authService.refresh(refreshToken);
-        setTokenCookies(res, tokens);
+    const tokens = await authService.refresh(refreshToken);
+    setTokenCookies(res, tokens);
 
-        logger.log({
-            timestamp: new Date().toISOString(),
-            level: LogLevel.INFO,
-            message: 'Token refreshed successfully',
-            ipAddress: req.ip,
-            environment: config.env,
-            traceId: req.traceId,
-        });
+    logger.log({
+        timestamp: new Date().toISOString(),
+        level: LogLevel.INFO,
+        message: 'Token refreshed successfully',
+        ipAddress: req.ip,
+        environment: config.env,
+        traceId: req.traceId,
+    });
 
-        res.status(HttpStatus.OK).json({ message: 'Token refreshed' });
-    } catch (error) {
-        if (error instanceof Error && error.name === 'ZodError') {
-            throw new UnauthorizedError('Refresh token missing or invalid');
-        }
-        throw error;
-    }
+    res.status(HttpStatus.OK).json({ message: 'Token refreshed' });
 };
 
 export const logout = async (req: Request, res: Response): Promise<void> => {

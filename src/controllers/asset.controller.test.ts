@@ -39,6 +39,11 @@ describe('Asset Controller', () => {
             params: {},
             query: {},
             body: {},
+            validData: {
+                params: {},
+                query: {},
+                body: {},
+            },
             user: { userId: 'user-1' },
             traceId: 'test-trace-id',
         };
@@ -54,8 +59,7 @@ describe('Asset Controller', () => {
         const validProjectId = '123e4567-e89b-12d3-a456-426614174003';
 
         it('should return assets if authorized', async () => {
-            req.params = { projectId: validProjectId };
-            req.query = { projectId: validProjectId };
+            req.validData.params = { projectId: validProjectId };
             
             const mockProject = { id: validProjectId, userId: 'user-1' };
             vi.mocked(projectService.getProjectByIdAndUserId).mockResolvedValue(mockProject as any);
@@ -71,8 +75,7 @@ describe('Asset Controller', () => {
         });
 
         it('should throw NotFoundError if unauthorized', async () => {
-            req.params = { projectId: validProjectId };
-            req.query = { projectId: validProjectId };
+            req.validData.params = { projectId: validProjectId };
             vi.mocked(projectService.getProjectByIdAndUserId).mockResolvedValue(undefined);
 
             await expect(assetController.getAssetsByProject(req, res))
@@ -84,9 +87,9 @@ describe('Asset Controller', () => {
         const validAssetId = '123e4567-e89b-12d3-a456-426614174001';
         const validVersionId = '123e4567-e89b-12d3-a456-426614174002';
 
-        it('should parse options correctly and call service if authorized', async () => {
-            req.params = { assetId: validAssetId, versionId: validVersionId };
-            req.body = { width: '100', height: 200, fit: 'contain', format: 'webp' };
+        it('should call service if authorized', async () => {
+            req.validData.params = { assetId: validAssetId, versionId: validVersionId };
+            req.validData.body = { width: 100, height: 200, fit: 'contain', format: 'webp' };
             
             const mockAsset = { id: validAssetId, userId: 'user-1' };
             vi.mocked(assetService.getAssetByIdAndUserId).mockResolvedValue(mockAsset as any);
@@ -108,20 +111,11 @@ describe('Asset Controller', () => {
         });
 
         it('should throw NotFoundError if unauthorized', async () => {
-            req.params = { assetId: validAssetId, versionId: validVersionId };
+            req.validData.params = { assetId: validAssetId, versionId: validVersionId };
             vi.mocked(assetService.getAssetByIdAndUserId).mockResolvedValue(undefined);
 
             await expect(assetController.manipulateAsset(req, res))
                 .rejects.toThrow(NotFoundError);
-        });
-
-        it('should throw InvalidParamError if width is not a number', async () => {
-            req.params = { assetId: validAssetId, versionId: validVersionId };
-            req.body = { width: 'invalid' };
-            vi.mocked(assetService.getAssetByIdAndUserId).mockResolvedValue({ id: validAssetId } as any);
-
-            await expect(assetController.manipulateAsset(req, res))
-                .rejects.toThrow(InvalidParamError);
         });
     });
 
@@ -129,8 +123,8 @@ describe('Asset Controller', () => {
         const validAssetId = '123e4567-e89b-12d3-a456-426614174001';
 
         it('should generate a key if authorized', async () => {
-            req.params = { id: validAssetId };
-            req.body = { expiresInSeconds: 3600 };
+            req.validData.params = { id: validAssetId };
+            req.validData.body = { expiresInSeconds: 3600 };
             
             const mockAsset = { id: validAssetId, userId: 'user-1' };
             vi.mocked(assetService.getAssetByIdAndUserId).mockResolvedValue(mockAsset as any);
@@ -146,7 +140,7 @@ describe('Asset Controller', () => {
         });
 
         it('should throw NotFoundError if unauthorized', async () => {
-            req.params = { id: validAssetId };
+            req.validData.params = { id: validAssetId };
             vi.mocked(assetService.getAssetByIdAndUserId).mockResolvedValue(undefined);
 
             await expect(assetController.generateAssetKey(req, res))
@@ -156,7 +150,7 @@ describe('Asset Controller', () => {
 
     describe('getPublicAsset', () => {
         it('should return image buffer for a valid key', async () => {
-            req.params = { key: 'valid-key' };
+            req.validData.params = { key: 'valid-key' };
             
             const mockData = { buffer: Buffer.from('image-data'), format: 'png' };
             vi.mocked(assetService.getLatestAssetVersionByKey).mockResolvedValue(mockData);
@@ -166,13 +160,6 @@ describe('Asset Controller', () => {
             expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'image/png');
             expect(res.status).toHaveBeenCalledWith(HttpStatus.OK);
             expect(res.send).toHaveBeenCalledWith(mockData.buffer);
-        });
-
-        it('should throw InvalidParamError if key is empty', async () => {
-            req.params = { key: '' };
-
-            await expect(assetController.getPublicAsset(req, res))
-                .rejects.toThrow(InvalidParamError);
         });
     });
 });
