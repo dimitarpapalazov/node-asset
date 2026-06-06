@@ -69,6 +69,7 @@ export interface Config {
      */
     cors: {
         origin: string | string[];
+        credentials: boolean;
     };
 
     /**
@@ -117,7 +118,8 @@ export const config: Config = {
         max: parseInt(envOrThrow('RATE_LIMIT_MAX_REQUESTS'), 10),
     },
     cors: {
-        origin: process.env.CORS_ORIGIN || '*',
+        origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+        credentials: true,
     },
     logger: {
         filePath: process.env.LOG_FILE_PATH || 'logs/app.log',

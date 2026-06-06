@@ -12,7 +12,7 @@ import { ValidatedRequest } from '../types/validation.js';
 const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict' as const,
+    sameSite: 'lax' as const,
 };
 
 const parseDurationToMs = (duration: string): number => {
