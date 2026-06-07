@@ -22,7 +22,9 @@ This is a backend API project built with TypeScript and Express.js. The goal is 
 - **Security:** 
     - Use `helmet` middleware to set secure HTTP headers by default.
     - Implement public asset retrieval via unique, short-lived expiring keys to protect storage internals.
-- **Validation:** Use **Zod** for schema validation. All request bodies, parameters, and queries must be validated using the `validate` middleware before reaching the controller.
+    - Apply **CORS** with restricted origins and credentials support as configured.
+    - Use **express-rate-limit** to protect API endpoints from abuse.
+- **Validation:** Use **Zod** for schema validation. All request bodies, parameters, and queries must be validated using the `validate` middleware. Controllers should use the `ValidatedRequest` type and access data via `req.validData` to ensure type safety.
 - **Error Handling:** Use the global `errorMiddleware` and the `ApiError` utility class for consistent error responses. Controllers should not use try-catch blocks for operational errors; instead, they should rely on the middleware to catch thrown `ApiError` instances.
 - **Storage Lifecycle:** Ensure all file deletion operations trigger necessary storage cleanup (Content-Addressable Storage) to prevent orphaned files.
 - **Environment Management:** Always use `envOrThrow` from `src/utils/env.ts` for environment variable access to ensure validation at startup.
@@ -42,10 +44,10 @@ This is a backend API project built with TypeScript and Express.js. The goal is 
 ## Technical Stack
 - Language: TypeScript
 - Framework: Express.js
-- Security: Helmet.js
+- Security: Helmet.js & Express-rate-limit
 - Validation: Zod
 - Database: PostgreSQL (with Drizzle ORM)
+- Queue: RabbitMQ
 - Authentication: JSON Web Tokens (JWT) & Argon2
 - Testing: Vitest & Supertest
 - Infrastructure: Docker
-- (Upcoming: RabbitMQ)
