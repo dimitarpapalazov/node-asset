@@ -7,7 +7,9 @@ import {
     deleteProjectSchema,
     exportProjectSchema,
     getProjectSchema,
-    updateProjectSchema
+    updateProjectSchema,
+    getExportJobStatusSchema,
+    downloadExportSchema
 } from '../schemas/project.schema.js';
 
 const router = Router();
@@ -19,6 +21,13 @@ router.get('/', projectController.getUserProjects);
 router.get('/:id', validate(getProjectSchema), projectController.getProject);
 router.put('/:id', validate(updateProjectSchema), projectController.updateProject);
 router.delete('/:id', validate(deleteProjectSchema), projectController.deleteProject);
+
+// Export routes
+router.post('/:id/export', validate(exportProjectSchema), projectController.initiateExport);
+router.get('/export-jobs/:jobId', validate(getExportJobStatusSchema), projectController.getExportJobStatus);
+router.get('/export-jobs/:jobId/download', validate(downloadExportSchema), projectController.downloadExport);
+
+// Legacy synchronous export
 router.get('/:id/export', validate(exportProjectSchema), projectController.exportProject);
 
 export default router;

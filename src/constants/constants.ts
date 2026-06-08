@@ -3,6 +3,7 @@ export const SHUTDOWN_TIMEOUT_MS = 10000;
 export enum HttpStatus {
     OK = 200,
     CREATED = 201,
+    ACCEPTED = 202,
     NO_CONTENT = 204,
     BAD_REQUEST = 400,
     UNAUTHORIZED = 401,
@@ -18,6 +19,17 @@ export enum AssetFit {
     FILL = 'fill',
     INSIDE = 'inside',
     OUTSIDE = 'outside',
+}
+
+export enum ExportStatus {
+    PENDING = 'pending',
+    PROCESSING = 'processing',
+    COMPLETED = 'completed',
+    FAILED = 'failed',
+}
+
+export enum QueueName {
+    PROJECT_EXPORTS = 'project_exports',
 }
 
 export const EXPORT_CONFIG = {

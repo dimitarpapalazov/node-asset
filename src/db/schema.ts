@@ -1,4 +1,5 @@
 import { pgTable, uuid, varchar, timestamp, text, integer, jsonb } from 'drizzle-orm/pg-core';
+import { ExportStatus } from '../constants/constants.js';
 
 export const users = pgTable('users', {
     id: uuid('id').primaryKey().defaultRandom(),
@@ -47,6 +48,22 @@ export const assetKeys = pgTable('asset_keys', {
     expiresAt: timestamp('expires_at'),
     
     createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const exportJobs = pgTable('export_jobs', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    projectId: uuid('project_id').references(() => projects.id, { onDelete: 'cascade' }).notNull(),
+    userId: uuid('user_id').references(() => users.id, { onDelete: 'cascade' }).notNull(),
+    
+    status: varchar('status', { length: 20 }).$type<ExportStatus>().default(ExportStatus.PENDING).notNull(),
+    
+    // CAS hash of the resulting zip file
+    zipHash: varchar('zip_hash', { length: 64 }),
+    
+    error: text('error'),
+
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 export const assetVersions = pgTable('asset_versions', {

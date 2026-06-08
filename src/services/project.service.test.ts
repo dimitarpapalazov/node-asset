@@ -4,8 +4,9 @@ import { db } from '../db/index.js';
 import * as assetService from './asset.service.js';
 import { storageService } from './storage.service.js';
 import archiver from 'archiver';
-import sharp from 'sharp';
 import { logger } from './logger/logger.factory.js';
+import { queueService } from './queue.service.js';
+import { ExportStatus } from '../constants/constants.js';
 
 vi.mock('../db/index.js', () => ({
     db: {
@@ -16,6 +17,14 @@ vi.mock('../db/index.js', () => ({
     }
 }));
 
+vi.mock('./queue.service.js', () => ({
+    queueService: {
+        publish: vi.fn().mockResolvedValue(undefined),
+        subscribe: vi.fn().mockResolvedValue(undefined),
+        connect: vi.fn().mockResolvedValue(undefined),
+    },
+}));
+
 vi.mock('./asset.service.js', () => ({
     getLatestVersion: vi.fn(),
 }));
@@ -24,6 +33,7 @@ vi.mock('./storage.service.js', () => ({
     storageService: {
         get: vi.fn(),
         delete: vi.fn(),
+        saveStream: vi.fn(),
     },
 }));
 
@@ -132,9 +142,9 @@ describe('Project Service', () => {
                 where: vi.fn().mockResolvedValue(undefined)
             };
             mockedDb.delete.mockReturnValue(queryBuilder);
-            
+
             await projectService.deleteProject('1', 'user1');
-            
+
             expect(mockedDb.delete).toHaveBeenCalled();
             expect(queryBuilder.where).toHaveBeenCalled();
             expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
@@ -145,7 +155,7 @@ describe('Project Service', () => {
         it('should delete project and clean up storage', async () => {
             const mockAssets = [{ id: 'a1' }];
             const mockVersions = [{ hash: 'h1' }];
-            
+
             // Mock finding assets
             mockedDb.select.mockReturnValueOnce({
                 from: vi.fn().mockReturnThis(),
@@ -167,13 +177,71 @@ describe('Project Service', () => {
                 where: vi.fn().mockResolvedValue(undefined)
             };
             mockedDb.delete.mockReturnValue(deleteQueryBuilder);
-            
+
             await projectService.deleteProject('p1', 'user1');
-            
+
             expect(storageService.delete).toHaveBeenCalledWith('h1');
             expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
                 message: expect.stringContaining('Project record deleted from DB: p1'),
             }));
+        });
+    });
+
+    describe('initiateExport', () => {
+        it('should create an export job and publish a message', async () => {
+            const mockProject = { id: 'p1', userId: 'u1' };
+            const mockJob = { id: 'j1', projectId: 'p1', userId: 'u1', status: ExportStatus.PENDING };
+
+            // Mock getProjectByIdAndUserId
+            mockedDb.select.mockReturnValueOnce({
+                from: vi.fn().mockReturnThis(),
+                where: vi.fn().mockResolvedValue([mockProject])
+            });
+
+            // Mock insert exportJobs
+            const insertQueryBuilder = {
+                values: vi.fn().mockReturnThis(),
+                returning: vi.fn().mockResolvedValue([mockJob])
+            };
+            mockedDb.insert.mockReturnValueOnce(insertQueryBuilder);
+
+            const result = await projectService.initiateExport('p1', 'u1');
+
+            expect(result).toBe('j1');
+            expect(mockedDb.insert).toHaveBeenCalled();
+            expect(queueService.publish).toHaveBeenCalledWith('project_exports', {
+                jobId: 'j1',
+                projectId: 'p1',
+                userId: 'u1'
+            });
+            expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+                message: expect.stringContaining('Export job initiated: j1'),
+            }));
+        });
+
+        it('should throw error if project not found', async () => {
+            mockedDb.select.mockReturnValueOnce({
+                from: vi.fn().mockReturnThis(),
+                where: vi.fn().mockResolvedValue([])
+            });
+
+            await expect(projectService.initiateExport('p1', 'u1')).rejects.toThrow('Project not found or unauthorized');
+        });
+    });
+
+    describe('getExportJobStatus', () => {
+        it('should return the export job', async () => {
+            const mockJob = { id: 'j1', status: ExportStatus.COMPLETED };
+            const queryBuilder = {
+                from: vi.fn().mockReturnThis(),
+                where: vi.fn().mockResolvedValue([mockJob])
+            };
+            mockedDb.select.mockReturnValue(queryBuilder);
+
+            const result = await projectService.getExportJobStatus('j1', 'u1');
+
+            expect(result).toEqual(mockJob);
+            expect(mockedDb.select).toHaveBeenCalled();
         });
     });
 
@@ -200,7 +268,7 @@ describe('Project Service', () => {
 
             expect(projectName).toBe('My Project');
             expect(archiver).toHaveBeenCalledWith('zip', expect.any(Object));
-            
+
             await vi.waitFor(() => expect(archive.finalize).toHaveBeenCalled());
 
             expect(archive.append).toHaveBeenCalledWith(expect.stringContaining('My Project'), { name: 'data.json' });

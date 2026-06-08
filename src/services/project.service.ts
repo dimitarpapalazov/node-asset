@@ -1,14 +1,15 @@
 import { db } from '../db/index.js';
-import { projects, assets, assetVersions } from '../db/schema.js';
+import { projects, assets, assetVersions, exportJobs } from '../db/schema.js';
 import { eq, and, inArray } from 'drizzle-orm';
 import archiver from 'archiver';
 import sharp from 'sharp';
 import * as assetService from './asset.service.js';
 import { storageService } from './storage.service.js';
-import { EXPORT_CONFIG, AssetFit } from '../constants/constants.js';
+import { EXPORT_CONFIG, AssetFit, ExportStatus, QueueName } from '../constants/constants.js';
 import { logger } from './logger/logger.factory.js';
 import { LogLevel } from './logger/index.js';
 import { config } from '../config/config.js';
+import { queueService } from './queue.service.js';
 
 export interface CreateProjectInput {
     name: string;
@@ -16,6 +17,8 @@ export interface CreateProjectInput {
 }
 
 export type Project = typeof projects.$inferSelect;
+
+export type ExportJob = typeof exportJobs.$inferSelect;
 
 export const createProject = async (input: CreateProjectInput): Promise<Project> => {
     const [project] = await db.insert(projects)
@@ -122,6 +125,47 @@ export const deleteProject = async (id: string, userId: string): Promise<void> =
         environment: config.env,
         traceId: 'system',
     });
+};
+
+export const initiateExport = async (projectId: string, userId: string): Promise<string> => {
+    const project = await getProjectByIdAndUserId(projectId, userId);
+
+    if (!project) {
+        throw new Error('Project not found or unauthorized');
+    }
+
+    const [job] = await db.insert(exportJobs)
+        .values({
+            projectId,
+            userId,
+            status: ExportStatus.PENDING,
+        })
+        .returning();
+
+    await queueService.publish(QueueName.PROJECT_EXPORTS, {
+        jobId: job.id,
+        projectId,
+        userId,
+    });
+
+    logger.log({
+        timestamp: new Date().toISOString(),
+        level: LogLevel.INFO,
+        message: `Export job initiated: ${job.id} for project ${projectId}`,
+        userId,
+        environment: config.env,
+        traceId: 'system',
+    });
+
+    return job.id;
+};
+
+export const getExportJobStatus = async (jobId: string, userId: string): Promise<ExportJob | undefined> => {
+    const [job] = await db.select()
+        .from(exportJobs)
+        .where(and(eq(exportJobs.id, jobId), eq(exportJobs.userId, userId)));
+
+    return job;
 };
 
 export const exportProject = async (projectId: string, userId: string): Promise<{ archive: archiver.Archiver, projectName: string }> => {

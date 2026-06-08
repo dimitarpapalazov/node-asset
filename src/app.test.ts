@@ -5,7 +5,7 @@ import app from './app.js';
 describe('Security Middleware', () => {
     it('should have security headers set by helmet', async () => {
         const response = await request(app).get('/health');
-        
+
         // Helmet sets several headers, let's check some common ones
         expect(response.headers['x-dns-prefetch-control']).toBe('off');
         expect(response.headers['x-frame-options']).toBe('SAMEORIGIN');
@@ -17,13 +17,13 @@ describe('Security Middleware', () => {
 
     it('should have CORS headers enabled', async () => {
         const response = await request(app).get('/health');
-        
-        expect(response.headers['access-control-allow-origin']).toBe('*');
+
+        expect(response.headers['access-control-allow-origin']).toBe('http://localhost:5173');
     });
 
     it('should have rate limit headers', async () => {
         const response = await request(app).get('/health');
-        
+
         // express-rate-limit headers
         // By default it uses legacy headers (x-ratelimit-*)
         expect(response.headers['x-ratelimit-limit']).toBeDefined();

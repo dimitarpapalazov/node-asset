@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import * as projectService from '../services/project.service.js';
-import { HttpStatus } from '../constants/constants.js';
-import { NotFoundError } from '../utils/errors.js';
+import { storageService } from '../services/storage.service.js';
+import { HttpStatus, ExportStatus } from '../constants/constants.js';
+import { NotFoundError, BadRequestError } from '../utils/errors.js';
 import { logger } from '../services/logger/logger.factory.js';
 import { LogLevel } from '../services/logger/index.js';
 import { config } from '../config/config.js';
@@ -11,7 +12,9 @@ import {
     GetProjectData,
     UpdateProjectData,
     DeleteProjectData,
-    ExportProjectData
+    ExportProjectData,
+    GetExportJobStatusData,
+    DownloadExportData
 } from '../schemas/project.schema.js';
 
 export const createProject = async (req: ValidatedRequest<CreateProjectData>, res: Response): Promise<void> => {
@@ -90,6 +93,67 @@ export const deleteProject = async (req: ValidatedRequest<DeleteProjectData>, re
     res.status(HttpStatus.NO_CONTENT).send();
 };
 
+export const initiateExport = async (req: ValidatedRequest<ExportProjectData>, res: Response): Promise<void> => {
+    const { id } = req.validData.params;
+    const userId = req.user!.userId;
+
+    const jobId = await projectService.initiateExport(id, userId);
+
+    res.status(HttpStatus.ACCEPTED).json({ jobId });
+};
+
+export const getExportJobStatus = async (req: ValidatedRequest<GetExportJobStatusData>, res: Response): Promise<void> => {
+    const { jobId } = req.validData.params;
+    const userId = req.user!.userId;
+
+    const job = await projectService.getExportJobStatus(jobId, userId);
+
+    if (!job) {
+        throw new NotFoundError(`Export job with ID ${jobId} not found or unauthorized`);
+    }
+
+    res.status(HttpStatus.OK).json(job);
+};
+
+export const downloadExport = async (req: ValidatedRequest<DownloadExportData>, res: Response): Promise<void> => {
+    const { jobId } = req.validData.params;
+    const userId = req.user!.userId;
+
+    const job = await projectService.getExportJobStatus(jobId, userId);
+
+    if (!job) {
+        throw new NotFoundError(`Export job with ID ${jobId} not found or unauthorized`);
+    }
+
+    if (job.status !== ExportStatus.COMPLETED || !job.zipHash) {
+        throw new BadRequestError(`Export job is not completed or has no result. Current status: ${job.status}`);
+    }
+
+    const project = await projectService.getProjectById(job.projectId);
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${project?.name || 'project'}-export.zip"`);
+
+    const stream = storageService.getStream(job.zipHash);
+    stream.pipe(res);
+
+    stream.on('error', (err) => {
+        logger.log({
+            timestamp: new Date().toISOString(),
+            level: LogLevel.ERROR,
+            message: `Error during export download: ${jobId}`,
+            userId,
+            traceId: req.traceId,
+            environment: config.env,
+            error: err.stack || err.message,
+        });
+
+        if (!res.headersSent) {
+            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({ message: 'Error during export download' });
+        }
+    });
+};
+
 export const exportProject = async (req: ValidatedRequest<ExportProjectData>, res: Response): Promise<void> => {
     const { id } = req.validData.params;
     const userId = req.user!.userId;
@@ -125,4 +189,3 @@ export const exportProject = async (req: ValidatedRequest<ExportProjectData>, re
         environment: config.env,
     });
 };
-

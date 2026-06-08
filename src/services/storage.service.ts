@@ -1,18 +1,24 @@
-import { mkdir, writeFile, readFile, access, unlink } from 'node:fs/promises';
+import { mkdir, writeFile, readFile, access, unlink, rename } from 'node:fs/promises';
+import { createReadStream, createWriteStream } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { config } from '../config/config.js';
 import { computeHash } from '../utils/hash.js';
 import { logger } from './logger/logger.factory.js';
 import { LogLevel } from './logger/index.js';
+import crypto from 'node:crypto';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 
 /**
  * Service for Content-Addressable Storage (CAS).
  */
 export class StorageService {
     private readonly baseDir: string;
+    private readonly tmpDir: string;
 
     constructor(baseDir: string = config.storage.uploadsDir) {
         this.baseDir = baseDir;
+        this.tmpDir = join(baseDir, 'tmp');
     }
 
     /**
@@ -43,6 +49,47 @@ export class StorageService {
         return hash;
     }
 
+    async saveStream(stream: Readable): Promise<string> {
+        await mkdir(this.tmpDir, { recursive: true });
+        const tmpFileName = crypto.randomUUID();
+        const tmpPath = join(this.tmpDir, tmpFileName);
+
+        const hash = crypto.createHash('sha256');
+        const writeStream = createWriteStream(tmpPath);
+
+        await pipeline(
+            stream,
+            async function* (source) {
+                for await (const chunk of source) {
+                    hash.update(chunk);
+                    yield chunk;
+                }
+            },
+            writeStream
+        );
+
+        const finalHash = hash.digest('hex');
+        const finalPath = this.getFilePath(finalHash);
+        const finalDir = dirname(finalPath);
+
+        if (await this.exists(finalHash)) {
+            await unlink(tmpPath);
+        } else {
+            await mkdir(finalDir, { recursive: true });
+            await rename(tmpPath, finalPath);
+
+            logger.log({
+                timestamp: new Date().toISOString(),
+                level: LogLevel.INFO,
+                message: `New file written to storage via stream: ${finalHash}`,
+                environment: config.env,
+                traceId: 'system',
+            });
+        }
+
+        return finalHash;
+    }
+
     /**
      * Retrieves a file from CAS storage.
      * @param hash - The SHA-256 hash of the file.
@@ -51,6 +98,15 @@ export class StorageService {
     async get(hash: string): Promise<Buffer> {
         const filePath = this.getFilePath(hash);
         return readFile(filePath);
+    }
+
+    /**
+     * Retrieves a file from CAS storage as a stream.
+     * @param hash - The SHA-256 hash of the file.
+     */
+    getStream(hash: string): Readable {
+        const filePath = this.getFilePath(hash);
+        return createReadStream(filePath);
     }
 
     /**

@@ -35,5 +35,17 @@ export const exportProjectSchema = getProjectSchema;
 
 export type ExportProjectData = z.infer<typeof exportProjectSchema>;
 
+export const getExportJobStatusSchema = z.object({
+    params: z.object({
+        jobId: z.string().uuid('Invalid job ID format'),
+    }),
+});
+
+export type GetExportJobStatusData = z.infer<typeof getExportJobStatusSchema>;
+
+export const downloadExportSchema = getExportJobStatusSchema;
+
+export type DownloadExportData = z.infer<typeof downloadExportSchema>;
+
 export type CreateProjectInput = z.infer<typeof createProjectSchema>['body'];
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>['body'];

@@ -1,8 +1,8 @@
 todo:
-add worker for export
 add worker for manipulation
 import project
 swagger
+sse for export
 
 done:
 init git
@@ -37,3 +37,4 @@ helmet
 rate limiting
 cors
 add rabbitmq
+add worker for export

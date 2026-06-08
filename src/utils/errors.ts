@@ -26,6 +26,12 @@ export class InvalidParamError extends AppError {
     }
 }
 
+export class BadRequestError extends AppError {
+    constructor(message: string) {
+        super(message, HttpStatus.BAD_REQUEST);
+    }
+}
+
 export class UnauthorizedError extends AppError {
     constructor(message: string = 'Unauthorized access.') {
         super(message, HttpStatus.UNAUTHORIZED);
