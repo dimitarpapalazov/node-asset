@@ -3,6 +3,7 @@ import { projects, assets, assetVersions, exportJobs } from '../db/schema.js';
 import { eq, and, inArray } from 'drizzle-orm';
 import archiver from 'archiver';
 import sharp from 'sharp';
+import AdmZip from 'adm-zip';
 import * as assetService from './asset.service.js';
 import { storageService } from './storage.service.js';
 import { EXPORT_CONFIG, AssetFit, ExportStatus, QueueName } from '../constants/constants.js';
@@ -10,6 +11,7 @@ import { logger } from './logger/logger.factory.js';
 import { LogLevel } from './logger/index.js';
 import { config } from '../config/config.js';
 import { queueService } from './queue.service.js';
+import { BadRequestError } from '../utils/errors.js';
 
 export interface CreateProjectInput {
     name: string;
@@ -228,4 +230,87 @@ export const exportProject = async (projectId: string, userId: string): Promise<
     });
 
     return { archive, projectName: project.name };
+};
+
+export const importProject = async (userId: string, buffer: Buffer) => {
+    let zip: AdmZip;
+
+    try {
+        zip = new AdmZip(buffer);
+    } catch {
+        throw new BadRequestError('Invalid zip file');
+    }
+
+    const dataEntry = zip.getEntry('data.json');
+
+    if (!dataEntry) {
+        throw new BadRequestError('Missing data.json in zip file');
+    }
+
+    let exportData: { name: string; assets: any[] };
+
+    try {
+        exportData = JSON.parse(dataEntry.getData().toString('utf-8'));
+    } catch {
+        throw new BadRequestError('Invalid data.json in zip file');
+    }
+
+    if (!exportData.name || typeof exportData.name !== 'string' || !Array.isArray(exportData.assets)) {
+        throw new BadRequestError('Invalid data.json structure: missing name or assets');
+    }
+
+    const project = await createProject({ name: exportData.name, userId });
+
+    const importedAssets = [];
+
+    for (const asset of exportData.assets) {
+        const version = asset.latestVersion;
+
+        if (!version || !version.format) {
+            throw new BadRequestError(`Asset "${asset.name}" is missing version information`);
+        }
+
+        const entryName = `assets/${asset.name}.${version.format}`;
+        const entry = zip.getEntry(entryName);
+
+        if (!entry) {
+            throw new BadRequestError(`Asset file not found in zip: ${entryName}`);
+        }
+
+        const assetBuffer = entry.getData();
+        const hash = await storageService.save(assetBuffer);
+
+        const [assetRecord] = await db.insert(assets)
+            .values({
+                name: asset.name,
+                userId,
+                projectId: project.id,
+            })
+            .returning();
+
+        const [versionRecord] = await db.insert(assetVersions)
+            .values({
+                assetId: assetRecord.id,
+                hash,
+                size: version.size || assetBuffer.length,
+                format: version.format || 'unknown',
+                width: version.width ?? undefined,
+                height: version.height ?? undefined,
+                params: version.params ?? undefined,
+            })
+            .returning();
+
+        importedAssets.push({ ...assetRecord, latestVersion: versionRecord });
+    }
+
+    logger.log({
+        timestamp: new Date().toISOString(),
+        level: LogLevel.INFO,
+        message: `Project imported: ${project.id} with ${importedAssets.length} assets`,
+        userId,
+        environment: config.env,
+        traceId: 'system',
+    });
+
+    return { project, assets: importedAssets };
 };

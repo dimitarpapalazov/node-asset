@@ -28,6 +28,7 @@
   },
   "homepage": "https://github.com/dimitarpapalazov/node-asset#readme",
   "devDependencies": {
+    "@types/adm-zip": "^0.5.8",
     "@types/archiver": "^7.0.0",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
@@ -45,6 +46,7 @@
     "vitest": "^4.1.7"
   },
   "dependencies": {
+    "adm-zip": "^0.5.17",
     "amqplib": "^2.0.1",
     "archiver": "^7.0.1",
     "argon2": "^0.44.0",

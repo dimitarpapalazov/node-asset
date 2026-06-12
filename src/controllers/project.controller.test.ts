@@ -3,7 +3,7 @@ import * as projectController from './project.controller.js';
 import * as projectService from '../services/project.service.js';
 import { HttpStatus } from '../constants/constants.js';
 import { logger } from '../services/logger/logger.factory.js';
-import { NotFoundError } from '../utils/errors.js';
+import { NotFoundError, InvalidParamError } from '../utils/errors.js';
 
 vi.mock('../services/project.service.js', () => ({
     createProject: vi.fn(),
@@ -12,6 +12,7 @@ vi.mock('../services/project.service.js', () => ({
     updateProject: vi.fn(),
     deleteProject: vi.fn(),
     exportProject: vi.fn(),
+    importProject: vi.fn(),
 }));
 
 vi.mock('../services/logger/logger.factory.js', () => ({
@@ -115,6 +116,33 @@ describe('Project Controller', () => {
 
             await expect(projectController.exportProject(req, res))
                 .rejects.toThrow('Project not found');
+        });
+    });
+
+    describe('importProject', () => {
+        it('should import a project and return 201', async () => {
+            req.file = { buffer: Buffer.from('zip-data') };
+            const mockResult = {
+                project: { id: 'new-p1', name: 'Imported Project' },
+                assets: [{ id: 'new-a1', name: 'image', latestVersion: { id: 'new-v1' } }],
+            };
+            vi.mocked(projectService.importProject).mockResolvedValue(mockResult as any);
+
+            await projectController.importProject(req, res);
+
+            expect(projectService.importProject).toHaveBeenCalledWith('user-1', Buffer.from('zip-data'));
+            expect(res.status).toHaveBeenCalledWith(HttpStatus.CREATED);
+            expect(res.json).toHaveBeenCalledWith(mockResult);
+            expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+                message: 'Project imported: new-p1 with 1 assets',
+            }));
+        });
+
+        it('should throw InvalidParamError when file is missing', async () => {
+            req.file = undefined;
+
+            await expect(projectController.importProject(req, res))
+                .rejects.toThrow(InvalidParamError);
         });
     });
 });

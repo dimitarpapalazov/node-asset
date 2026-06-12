@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import * as projectService from '../services/project.service.js';
 import { storageService } from '../services/storage.service.js';
 import { HttpStatus, ExportStatus } from '../constants/constants.js';
-import { NotFoundError, BadRequestError } from '../utils/errors.js';
+import { NotFoundError, BadRequestError, InvalidParamError } from '../utils/errors.js';
 import { logger } from '../services/logger/logger.factory.js';
 import { LogLevel } from '../services/logger/index.js';
 import { config } from '../config/config.js';
@@ -14,7 +14,8 @@ import {
     DeleteProjectData,
     ExportProjectData,
     GetExportJobStatusData,
-    DownloadExportData
+    DownloadExportData,
+    ImportProjectData
 } from '../schemas/project.schema.js';
 
 export const createProject = async (req: ValidatedRequest<CreateProjectData>, res: Response): Promise<void> => {
@@ -188,4 +189,26 @@ export const exportProject = async (req: ValidatedRequest<ExportProjectData>, re
         traceId: req.traceId,
         environment: config.env,
     });
+};
+
+export const importProject = async (req: ValidatedRequest<ImportProjectData>, res: Response): Promise<void> => {
+    const file = req.file;
+
+    if (!file) {
+        throw new InvalidParamError('Required field "file" is missing from request.');
+    }
+
+    const userId = req.user!.userId;
+    const result = await projectService.importProject(userId, file.buffer);
+
+    logger.log({
+        timestamp: new Date().toISOString(),
+        level: LogLevel.INFO,
+        message: `Project imported: ${result.project.id} with ${result.assets.length} assets`,
+        userId,
+        traceId: req.traceId,
+        environment: config.env,
+    });
+
+    res.status(HttpStatus.CREATED).json(result);
 };

@@ -47,5 +47,9 @@ export const downloadExportSchema = getExportJobStatusSchema;
 
 export type DownloadExportData = z.infer<typeof downloadExportSchema>;
 
+export const importProjectSchema = z.object({});
+
+export type ImportProjectData = z.infer<typeof importProjectSchema>;
+
 export type CreateProjectInput = z.infer<typeof createProjectSchema>['body'];
 export type UpdateProjectInput = z.infer<typeof updateProjectSchema>['body'];

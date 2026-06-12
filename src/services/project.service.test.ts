@@ -4,6 +4,7 @@ import { db } from '../db/index.js';
 import * as assetService from './asset.service.js';
 import { storageService } from './storage.service.js';
 import archiver from 'archiver';
+import AdmZip from 'adm-zip';
 import { logger } from './logger/logger.factory.js';
 import { queueService } from './queue.service.js';
 import { ExportStatus } from '../constants/constants.js';
@@ -33,6 +34,7 @@ vi.mock('./storage.service.js', () => ({
     storageService: {
         get: vi.fn(),
         delete: vi.fn(),
+        save: vi.fn(),
         saveStream: vi.fn(),
     },
 }));
@@ -64,6 +66,10 @@ vi.mock('sharp', () => {
     (sharpFn as any).cache = vi.fn();
     return { default: sharpFn };
 });
+
+vi.mock('adm-zip', () => ({
+    default: vi.fn(),
+}));
 
 const mockedDb = db as any;
 
@@ -283,6 +289,123 @@ describe('Project Service', () => {
             });
 
             await expect(projectService.exportProject('p1', 'wrong-user')).rejects.toThrow('Project not found or unauthorized');
+        });
+    });
+
+    describe('importProject', () => {
+        const mockDataJson = Buffer.from(JSON.stringify({
+            name: 'Imported Project',
+            exportedAt: '2025-01-01T00:00:00.000Z',
+            assets: [
+                {
+                    id: 'old-a1',
+                    name: 'image',
+                    userId: 'old-user',
+                    projectId: 'old-p1',
+                    createdAt: '2025-01-01T00:00:00.000Z',
+                    updatedAt: '2025-01-01T00:00:00.000Z',
+                    latestVersion: {
+                        id: 'old-v1',
+                        assetId: 'old-a1',
+                        hash: 'old-hash',
+                        size: 100,
+                        format: 'png',
+                        width: 800,
+                        height: 600,
+                        params: null,
+                        createdAt: '2025-01-01T00:00:00.000Z',
+                    },
+                },
+            ],
+        }));
+
+        const mockAssetBuffer = Buffer.from('fake-image-data');
+
+        it('should import a project from a valid zip', async () => {
+            vi.mocked(AdmZip).mockImplementation(function(this: any) {
+                this.getEntry = vi.fn((name: string) => {
+                    if (name === 'data.json') {
+                        return { getData: vi.fn().mockReturnValue(mockDataJson) };
+                    }
+                    if (name === 'assets/image.png') {
+                        return { getData: vi.fn().mockReturnValue(mockAssetBuffer) };
+                    }
+                    return null;
+                });
+            });
+
+            const mockProject = { id: 'new-p1', name: 'Imported Project', userId: 'user1' };
+            const mockAsset = { id: 'new-a1', name: 'image', userId: 'user1', projectId: 'new-p1' };
+            const mockVersion = { id: 'new-v1', assetId: 'new-a1', hash: 'new-hash', size: 100, format: 'png', width: 800, height: 600 };
+
+            mockedDb.insert.mockReturnValueOnce({ values: vi.fn().mockReturnThis(), returning: vi.fn().mockResolvedValue([mockProject]) });
+            mockedDb.insert.mockReturnValueOnce({ values: vi.fn().mockReturnThis(), returning: vi.fn().mockResolvedValue([mockAsset]) });
+            mockedDb.insert.mockReturnValueOnce({ values: vi.fn().mockReturnThis(), returning: vi.fn().mockResolvedValue([mockVersion]) });
+            vi.mocked(storageService.save).mockResolvedValue('new-hash');
+
+            const result = await projectService.importProject('user1', Buffer.from('zip-data'));
+
+            expect(result.project).toEqual(mockProject);
+            expect(result.assets).toHaveLength(1);
+            expect(result.assets[0]).toEqual({ ...mockAsset, latestVersion: mockVersion });
+            expect(storageService.save).toHaveBeenCalledWith(mockAssetBuffer);
+            expect(logger.log).toHaveBeenCalledWith(expect.objectContaining({
+                message: 'Project imported: new-p1 with 1 assets',
+            }));
+        });
+
+        it('should throw BadRequestError when zip is corrupt', async () => {
+            vi.mocked(AdmZip).mockImplementation(function(this: any) {
+                throw new Error('Corrupt zip');
+            });
+
+            await expect(projectService.importProject('user1', Buffer.from('bad-data')))
+                .rejects.toThrow('Invalid zip file');
+        });
+
+        it('should throw BadRequestError when data.json is missing', async () => {
+            vi.mocked(AdmZip).mockImplementation(function(this: any) {
+                this.getEntry = vi.fn().mockReturnValue(null);
+            });
+
+            await expect(projectService.importProject('user1', Buffer.from('zip-data')))
+                .rejects.toThrow('Missing data.json in zip file');
+        });
+
+        it('should throw BadRequestError when data.json is invalid JSON', async () => {
+            vi.mocked(AdmZip).mockImplementation(function(this: any) {
+                this.getEntry = vi.fn().mockReturnValue({
+                    getData: vi.fn().mockReturnValue(Buffer.from('not json')),
+                });
+            });
+
+            await expect(projectService.importProject('user1', Buffer.from('zip-data')))
+                .rejects.toThrow('Invalid data.json in zip file');
+        });
+
+        it('should throw BadRequestError when data.json is missing required fields', async () => {
+            vi.mocked(AdmZip).mockImplementation(function(this: any) {
+                this.getEntry = vi.fn().mockReturnValue({
+                    getData: vi.fn().mockReturnValue(Buffer.from(JSON.stringify({}))),
+                });
+            });
+
+            await expect(projectService.importProject('user1', Buffer.from('zip-data')))
+                .rejects.toThrow('Invalid data.json structure');
+        });
+
+        it('should throw BadRequestError when asset file is missing from zip', async () => {
+            vi.mocked(AdmZip).mockImplementation(function(this: any) {
+                this.getEntry = vi.fn((name: string) => {
+                    if (name === 'data.json') {
+                        return { getData: vi.fn().mockReturnValue(mockDataJson) };
+                    }
+                    return null;
+                });
+            });
+
+            await expect(projectService.importProject('user1', Buffer.from('zip-data')))
+                .rejects.toThrow('Asset file not found in zip: assets/image.png');
         });
     });
 });
